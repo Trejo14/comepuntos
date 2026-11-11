@@ -1,0 +1,2226 @@
+<title>ComePuntos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{
+  --bg:#f6f4ef; --panel:#ffffff; --ink:#1f1d2b; --muted:#6c6879; --line:#e4e0d6;
+  --accent:#5a48e0; --accent-ink:#ffffff; --accent-soft:#ece9ff;
+  --ok:#1e9e57; --ok-soft:#e1f6e9; --bad:#d94343; --bad-soft:#fde7e7;
+  --warn:#b97a12; --warn-soft:#fdf2d8; --chip:#ffffff; --chip-line:#d9d4c8;
+  --code-bg:#1d1c2a; --code-ink:#ebe9f7; --code-muted:#8a87a3; --game-bg:#0c0b16;
+  --locked:#c9c4b8; --shadow:0 2px 0 rgba(0,0,0,.08);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15141d; --panel:#1f1e2a; --ink:#ecebf3; --muted:#a19fb3; --line:#33313f;
+    --accent:#8b7cff; --accent-ink:#14131c; --accent-soft:#2b2747;
+    --ok:#3ccf7f; --ok-soft:#173326; --bad:#ff6b6b; --bad-soft:#3a1d22;
+    --warn:#f0b445; --warn-soft:#3a2f17; --chip:#272635; --chip-line:#45434f;
+    --code-bg:#11101a; --locked:#4a4856; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15141d; --panel:#1f1e2a; --ink:#ecebf3; --muted:#a19fb3; --line:#33313f;
+  --accent:#8b7cff; --accent-ink:#14131c; --accent-soft:#2b2747;
+  --ok:#3ccf7f; --ok-soft:#173326; --bad:#ff6b6b; --bad-soft:#3a1d22;
+  --warn:#f0b445; --warn-soft:#3a2f17; --chip:#272635; --chip-line:#45434f;
+  --code-bg:#11101a; --locked:#4a4856; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--panel)}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+code,pre,.mono,textarea.editor{font-family:Consolas,"Cascadia Mono","Courier New",monospace}
+button{font:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+
+/* ---------- barra superior ---------- */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:1px solid var(--line)}
+.barra{max-width:1280px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:20px;letter-spacing:.3px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.logo .bolita{width:22px;height:22px;border-radius:50%;background:#ffcc33;box-shadow:inset -3px -3px 0 rgba(0,0,0,.15)}
+.stats{display:flex;gap:10px;margin-left:auto;align-items:center;flex-wrap:wrap}
+.stat{font-weight:700;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
+.btn-sec{background:var(--panel);border:1px solid var(--line);color:var(--ink);padding:6px 12px;border-radius:10px;font-weight:600}
+.btn-sec:hover{border-color:var(--accent)}
+
+/* ---------- layout ---------- */
+main>section{min-width:0}
+main{max-width:1280px;margin:0 auto;padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr) 500px;gap:20px;align-items:start}
+@media (max-width:1050px){main{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px}
+.juego-col{position:sticky;top:calc(76px + env(safe-area-inset-top,0px))}
+@media (max-width:1050px){.juego-col{position:static}}
+
+/* ---------- camino ---------- */
+.intro{padding:20px 22px;margin-bottom:16px}
+.intro h1{margin:0 0 6px;font-size:24px}
+.intro p{margin:0;color:var(--muted)}
+.camino{padding:24px 12px 30px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.paso{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.nodo-camino{width:78px;height:78px;border-radius:50%;border:none;font-size:32px;display:grid;place-items:center;
+  background:var(--accent);color:var(--accent-ink);box-shadow:0 6px 0 rgba(0,0,0,.18);transition:transform .1s}
+.nodo-camino:hover:not(:disabled){transform:translateY(-2px)}
+.nodo-camino:active:not(:disabled){transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.18)}
+.nodo-camino.hecho{background:var(--ok)}
+.nodo-camino.bloqueado{background:var(--locked);box-shadow:0 6px 0 rgba(0,0,0,.08);filter:grayscale(1)}
+.nodo-camino.actual{outline:4px solid var(--accent-soft);outline-offset:4px;animation:latido 1.6s infinite}
+@keyframes latido{50%{outline-offset:8px}}
+.etiqueta-camino{text-align:center;font-weight:700;font-size:15px}
+.etiqueta-camino small{display:block;font-weight:500;color:var(--muted);font-size:13px}
+.conector{width:4px;height:22px;background:var(--line);border-radius:2px}
+
+/* ---------- juego ---------- */
+.juego{padding:14px}
+.juego h2{margin:0 0 8px;font-size:17px;display:flex;align-items:center;justify-content:space-between}
+.hud{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.hud span{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-weight:700;font-size:14px}
+.lienzo-caja{position:relative;background:var(--game-bg);border-radius:12px;overflow:hidden;line-height:0}
+canvas{width:100%;height:auto;display:block}
+.controles{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.dpad{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(2,34px);gap:4px;margin-left:auto}
+.dpad button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;font-size:16px}
+.dpad .up{grid-column:2}
+.dpad .left{grid-column:1;grid-row:2}.dpad .down{grid-column:2;grid-row:2}.dpad .right{grid-column:3;grid-row:2}
+.ayuda-juego{font-size:13px;color:var(--muted);margin:8px 0 0}
+.piezas{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pieza{font-size:13px;padding:5px 8px;border-radius:8px;border:1px solid var(--line);display:flex;gap:6px;align-items:center}
+.pieza.si{background:var(--ok-soft);border-color:transparent}
+.pieza.no{color:var(--muted)}
+.aviso-juego{margin-top:8px;font-size:13px;padding:6px 10px;border-radius:8px;background:var(--bad-soft);color:var(--bad);display:none}
+
+/* ---------- lección ---------- */
+.leccion{padding:18px 22px 0;min-height:560px;display:flex;flex-direction:column}
+.lec-top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.cerrar{border:none;background:none;font-size:24px;color:var(--muted);padding:0 4px}
+.progreso{flex:1;height:14px;background:var(--line);border-radius:999px;overflow:hidden}
+.progreso div{height:100%;background:var(--ok);border-radius:999px;transition:width .3s}
+.corazones{font-weight:800;color:var(--bad);white-space:nowrap}
+.ejercicio{flex:1}
+.tipo{font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.ejercicio h3{font-size:21px;margin:0 0 14px;line-height:1.35}
+.ejercicio p{margin:0 0 12px}
+.teoria{font-size:16.5px}
+.teoria .ejemplo{background:var(--accent-soft);border-radius:12px;padding:12px 14px;margin:12px 0}
+pre.codigo, .codigo-linea-caja{background:var(--code-bg);color:var(--code-ink);border-radius:12px;padding:12px 14px;margin:10px 0;overflow-x:auto;font-size:15px;line-height:1.55}
+code.in{background:var(--accent-soft);padding:1px 6px;border-radius:6px;font-size:.92em}
+pre.codigo .com{color:var(--code-muted)}
+.opciones{display:grid;gap:10px}
+.opcion{text-align:left;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+.opcion:hover{border-color:var(--accent)}
+.opcion.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opcion.bien{border-color:var(--ok);background:var(--ok-soft)}
+.opcion.mal{border-color:var(--bad);background:var(--bad-soft)}
+.opcion code{font-size:14px}
+.banco{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:2px dashed var(--line);min-height:56px}
+.ficha{padding:7px 12px;border-radius:10px;border:2px solid var(--chip-line);background:var(--chip);color:var(--ink);font-family:Consolas,"Courier New",monospace;font-size:15px;box-shadow:0 2px 0 var(--chip-line)}
+.ficha:hover{border-color:var(--accent)}
+.ficha.usada{visibility:hidden}
+.hueco{display:inline-block;min-width:54px;padding:1px 8px;border-bottom:2px solid var(--code-muted);margin:0 2px;text-align:center;cursor:pointer;color:#ffd866;min-height:1.4em;vertical-align:bottom}
+.hueco.vacio{color:transparent}
+.hueco.bien{color:#5ee59a;border-color:#5ee59a}
+.hueco.mal{color:#ff8080;border-color:#ff8080}
+.respuesta-orden{min-height:64px;border:2px dashed var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.respuesta-orden .ficha{align-self:flex-start;text-align:left}
+.diagrama{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:6px 0}
+.dnodo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.forma{padding:8px 14px;border-radius:10px;font-weight:600;font-size:15px;border:2px solid transparent}
+.f-inicio,.f-fin{background:var(--ok-soft);border-color:var(--ok);border-radius:999px}
+.f-proc{background:var(--accent-soft);border-color:var(--accent)}
+.f-dec{background:var(--warn-soft);border-color:var(--warn);clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,12px 100%,0 50%);padding:8px 24px;border:none}
+.f-ciclo{background:#efe3ff;border-color:#9b5de5;color:#3b1d6e}
+:root[data-theme="dark"] .f-ciclo{background:#33244d;color:#e6d6ff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .f-ciclo{background:#33244d;color:#e6d6ff}}
+.f-ret{background:var(--bad-soft);border-color:var(--bad)}
+.flecha-si{font-weight:800;color:var(--ok);font-size:14px}
+.flecha-abajo{color:var(--muted);font-weight:700;font-size:14px;padding:2px 0 2px 18px}
+.diagrama .hueco{color:var(--accent);border-color:var(--accent);font-family:Consolas,"Courier New",monospace}
+.diagrama .hueco.vacio{color:transparent}
+.diagrama .hueco.bien{color:var(--ok);border-color:var(--ok)}
+.diagrama .hueco.mal{color:var(--bad);border-color:var(--bad)}
+.lineas-revisar{background:var(--code-bg);border-radius:12px;padding:8px 0;margin:10px 0;overflow-x:auto}
+.lineas-revisar button{display:block;width:100%;text-align:left;border:none;background:none;color:var(--code-ink);font-family:Consolas,"Courier New",monospace;font-size:15px;padding:3px 14px;white-space:pre}
+.lineas-revisar button:hover{background:rgba(255,255,255,.06)}
+.lineas-revisar button.sel{background:rgba(255,216,102,.18);outline:1px solid #ffd866}
+.lineas-revisar button.bien{background:rgba(94,229,154,.18)}
+.lineas-revisar button .num{color:var(--code-muted);display:inline-block;width:28px}
+.chat{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.burbuja{padding:12px 14px;border-radius:14px;max-width:92%}
+.burbuja.yo{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px;white-space:pre-wrap}
+.burbuja.ia{align-self:flex-start;background:var(--bg);border:1px solid var(--line);border-bottom-left-radius:4px}
+.burbuja.ia pre{background:var(--code-bg);color:var(--code-ink);padding:10px;border-radius:8px;overflow-x:auto;font-size:14px;margin:8px 0}
+.quien{font-size:12px;font-weight:800;color:var(--muted);margin-bottom:4px}
+textarea.prompt{width:100%;min-height:110px;border-radius:12px;border:2px solid var(--line);padding:10px 12px;font:inherit;background:var(--panel);color:var(--ink);resize:vertical}
+textarea.prompt:focus{outline:none;border-color:var(--accent)}
+.checklist{list-style:none;padding:0;margin:10px 0;display:grid;gap:4px;font-size:15px}
+.checklist li::before{content:"○ ";color:var(--muted)}
+.checklist li.si{color:var(--ok)}
+.checklist li.si::before{content:"✓ ";font-weight:800}
+.nota{background:var(--warn-soft);border-radius:10px;padding:10px 12px;font-size:15px;margin:10px 0}
+/* editor */
+.editor-caja{display:flex;background:var(--code-bg);border-radius:12px;overflow:hidden;margin:10px 0}
+.gutter{color:var(--code-muted);text-align:right;padding:12px 8px 12px 10px;user-select:none;font-family:Consolas,"Courier New",monospace;font-size:15px;line-height:1.55;white-space:pre;overflow:hidden}
+textarea.editor{flex:1;min-height:300px;border:none;outline:none;resize:vertical;background:transparent;color:var(--code-ink);font-size:15px;line-height:1.55;padding:12px 12px 12px 4px;white-space:pre;overflow:auto;tab-size:2}
+.pruebas{list-style:none;padding:0;margin:8px 0;display:grid;gap:4px;font-size:14.5px}
+.pruebas li{padding:5px 10px;border-radius:8px;font-family:Consolas,"Courier New",monospace}
+.pruebas li.si{background:var(--ok-soft)}
+.pruebas li.no{background:var(--bad-soft)}
+.estado-codigo{font-weight:700;font-size:15px}
+.error-codigo{background:var(--bad-soft);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.consola{background:var(--code-bg);color:#9fe3b4;border-radius:10px;padding:8px 12px;font-size:13.5px;font-family:Consolas,monospace;max-height:120px;overflow:auto;white-space:pre-wrap}
+.pista{background:var(--warn-soft);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:15px}
+.acciones-codigo{display:flex;gap:8px;flex-wrap:wrap}
+/* pie de lección */
+.pie{margin:18px -22px 0;padding:14px 22px;border-top:2px solid var(--line);display:flex;align-items:center;gap:14px;border-radius:0 0 16px 16px;min-height:78px}
+.pie.bien{background:var(--ok-soft);border-color:transparent}
+.pie.mal{background:var(--bad-soft);border-color:transparent}
+.pie .msg{flex:1}
+.pie .msg b{display:block;font-size:18px}
+.pie.bien .msg b{color:var(--ok)}
+.pie.mal .msg b{color:var(--bad)}
+.btn-prim{background:var(--accent);color:var(--accent-ink);border:none;border-radius:12px;padding:12px 26px;font-weight:800;font-size:16px;box-shadow:0 4px 0 rgba(0,0,0,.2);text-transform:uppercase;letter-spacing:.4px;margin-left:auto}
+.btn-prim:disabled{background:var(--locked);box-shadow:none;color:#fff}
+.pie.bien .btn-prim{background:var(--ok)}
+.pie.mal .btn-prim{background:var(--bad)}
+.centro{text-align:center;padding:30px 10px}
+.centro .grande{font-size:64px}
+.centro h2{font-size:26px;margin:8px 0}
+.pasos-vs{display:grid;gap:6px;padding-left:22px}
+.reglas{padding:0;margin:0;list-style:none;display:grid;gap:10px}
+.reglas li{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.reglas b{display:block}
+dialog{border:none;border-radius:18px;padding:0;max-width:640px;width:calc(100% - 32px);background:var(--panel);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:20px 22px}
+.dlg h2{margin:0 0 12px}
+.oculto{display:none!important}
+@media (max-width:600px){
+  .leccion{padding:14px 14px 0}
+  .pie{margin:18px -14px 0;padding:12px 14px;flex-wrap:wrap}
+  .ejercicio h3{font-size:19px}
+  .piezas{grid-template-columns:1fr}
+}
+</style>
+<header>
+  <div class="barra">
+    <div class="logo" id="irInicio"><span class="bolita"></span>ComePuntos</div>
+    <div class="stats">
+      <span class="stat" title="Experiencia">⚡ <span id="xp">0</span> XP</span>
+      <span class="stat" title="Días seguidos practicando">🔥 <span id="racha">0</span></span>
+      <button class="btn-sec" id="btnReglas">🤖 Usar bien la IA</button>
+      <button class="btn-sec" id="btnSonido" title="Sonido">🔊</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="izq"></section>
+  <aside class="juego-col">
+    <div class="panel juego">
+      <h2><span>🎮 Tu juego</span><button class="btn-sec" id="btnReiniciar">↺ Reiniciar</button></h2>
+      <div class="hud">
+        <span id="hudPuntos">Puntos: 0</span>
+        <span id="hudVidas">Vidas: ❤❤❤</span>
+        <span id="hudQuedan">Quedan: ?</span>
+        <span id="hudRadar" class="oculto">📏 Fantasma a ?</span>
+      </div>
+      <div class="lienzo-caja"><canvas id="lienzo" width="456" height="504"></canvas></div>
+      <div class="controles">
+        <span class="ayuda-juego" style="margin:0">Flechas o W A S D para moverte</span>
+        <div class="dpad">
+          <button class="up" data-dir="arriba" aria-label="arriba">▲</button>
+          <button class="left" data-dir="izquierda" aria-label="izquierda">◀</button>
+          <button class="down" data-dir="abajo" aria-label="abajo">▼</button>
+          <button class="right" data-dir="derecha" aria-label="derecha">▶</button>
+        </div>
+      </div>
+      <div class="aviso-juego" id="avisoJuego"></div>
+      <div class="piezas" id="piezas"></div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="dlgReglas">
+  <div class="dlg">
+    <h2>🤖 Reglas de oro para usar la IA</h2>
+    <ul class="reglas" id="listaReglas"></ul>
+    <p style="text-align:right;margin:16px 0 0"><button class="btn-prim" id="cerrarReglas">Entendido</button></p>
+  </div>
+</dialog>
+
+<!-- ======================================================================
+     DATOS: el mapa, las lecciones y utilidades "puras" (sin pantalla).
+     ====================================================================== -->
+<script id="datos">
+"use strict";
+
+const MAPA_TEXTO = [
+  "###################",
+  "#o.......#.......o#",
+  "#.##.###.#.###.##.#",
+  "#.................#",
+  "#.##.#.#####.#.##.#",
+  "#....#...#...#....#",
+  "####.###.#.###.####",
+  "####.#.......#.####",
+  "####.#.## ##.#.####",
+  "#......#   #......#",
+  "####.#.#####.#.####",
+  "####.#.......#.####",
+  "####.#.#####.#.####",
+  "#........#........#",
+  "#.##.###.#.###.##.#",
+  "#o.#..... .....#.o#",
+  "##.#.#.#####.#.#.##",
+  "#....#...#...#....#",
+  "#.######.#.######.#",
+  "#.................#",
+  "###################"
+];
+const DIRECCIONES = ["arriba", "abajo", "izquierda", "derecha"];
+
+// Los mismos nombres que ConsoleColor de C#, con el color que se ve en la web.
+const COLORES_CONSOLA = {
+  black: "#000000", darkblue: "#1f2f9e", darkgreen: "#1e7d43", darkcyan: "#178a99",
+  darkred: "#a32030", darkmagenta: "#8e3a9e", darkyellow: "#c99a1a", gray: "#b9b9c6",
+  darkgray: "#6b6b7a", blue: "#2f5bff", green: "#2ecc71", cyan: "#3fdcf0",
+  red: "#ff4d5e", magenta: "#ff6ad5", yellow: "#ffd23f", white: "#ffffff"
+};
+
+const REGLAS_IA = [
+  ["Da contexto", "Di qué estás haciendo, en qué lenguaje y qué sabes. «Soy principiante, estoy aprendiendo C#…»"],
+  ["Sé específico", "«Ayúdame» no dice nada. Di qué método, qué recibe, qué debe devolver y qué pasa ahora."],
+  ["Pide que te explique", "Pide explicaciones y ejemplos, no solo la respuesta. Si no lo entiendes, no lo has aprendido."],
+  ["Comprueba todo", "La IA se equivoca y a veces inventa cosas con mucha seguridad. Prueba el código y revisa la documentación oficial (Microsoft Learn)."],
+  ["Pega el error exacto", "Cuando algo falla, copia el mensaje de error (por ejemplo CS0019) y tu código. Sin eso, la IA solo puede adivinar."],
+  ["Pide a tu nivel", "Si te responde con cosas que no conoces (LINQ, lambdas…), dile: «explícamelo solo con if, for y variables»."],
+  ["Cuida tus datos", "Nunca compartas contraseñas, tu dirección, teléfono ni datos de otras personas."],
+  ["Sé honesto", "Di cuándo usaste IA. Usarla para aprender está bien; presentar como tuyo algo que no entiendes, no."]
+];
+
+// Ayudantes que usan las pruebas (se cargan también dentro del Worker).
+const HELPERS_SRC = String.raw`
+function mostrar(v){
+  if (typeof v === "string") return '"' + v + '"';
+  if (v === undefined) return "nada";
+  if (v === null) return "null";
+  if (Array.isArray(v)) return JSON.stringify(v);
+  if (typeof v === "function") return "un método";
+  return String(v);
+}
+function caso(desc, obtenido, esperado){
+  const ok = obtenido === esperado;
+  return { ok: ok, msg: desc + (ok ? "  →  " + mostrar(obtenido) : "  →  esperaba " + mostrar(esperado) + ", tu código dio " + mostrar(obtenido)) };
+}
+function crearAzar(){
+  return {
+    Next: function (a, b) { if (b === undefined) { b = a; a = 0; } return a + Math.floor(Math.random() * (b - a)); },
+    NextDouble: function () { return Math.random(); }
+  };
+}
+`;
+
+/* -------------------------------------------------------------------------
+   LECCIONES. Cada una arregla una "pieza" del juego.
+   Tipos de ejercicio: teoria, opcion, hueco, ordenar, diagrama, codigo,
+                       ia_elige, ia_escribe, ia_revisa
+   En "hueco" y "diagrama", [[correcta|distractor|distractor]] es un hueco.
+   ------------------------------------------------------------------------- */
+const UNIDADES = [
+// ======================================================================= 0
+{
+  icono: "📦", titulo: "Variables y tipos", pieza: "Velocidad, vidas y color",
+  funciones: ["velocidad", "vidasIniciales", "colorJugador"], tipo: "vars",
+  ejercicios: [
+    { t: "teoria", titulo: "Una variable es una cajita con nombre… y con tipo",
+      html: `<p>Los programas necesitan <b>recordar</b> cosas: cuántas vidas tienes, cuántos puntos llevas… Para eso usan <b>variables</b>. En C#, cada variable dice qué <b>tipo</b> de cosa guarda:</p>
+<pre class="codigo">int vidas = 3;</pre>
+<div class="ejemplo">Se lee: <b>«crea una cajita de tipo <code class="in">int</code> (número entero) llamada <code class="in">vidas</code> y guarda (<code class="in">=</code>) el 3»</b>. El <code class="in">;</code> es como el punto final de una oración: en C# <b>toda</b> instrucción termina con <code class="in">;</code>.</div>
+<p>Los tipos que vas a usar:</p>
+<pre class="codigo">int    puntos = 10;        <span class="com">// número entero</span>
+string nombre = "Ana";     <span class="com">// texto: comillas DOBLES</span>
+char   letra  = '#';       <span class="com">// UNA sola letra: comillas SIMPLES</span>
+bool   gane   = false;     <span class="com">// verdadero o falso</span></pre>` },
+    { t: "opcion", pregunta: "¿Qué guarda esta variable?", codigo: `int puntos = 10;`,
+      opciones: ["El número 10", "La palabra «puntos»", "Nada, falta algo"], correcta: 0,
+      explicacion: "int es el tipo, puntos es el nombre de la cajita y 10 es lo que guarda." },
+    { t: "opcion", pregunta: "¿Cuál de estas líneas es correcta en C#?",
+      opciones: [`int a = "cinco";`, `string a = "cinco";`, `string a = cinco;`], correcta: 1, codigoOpciones: true,
+      explicacion: "Un texto se guarda en una variable string y va entre comillas dobles. Un int no puede guardar texto." },
+    { t: "opcion", pregunta: "¿Cuál guarda correctamente UNA letra (char)?",
+      opciones: [`char c = '#';`, `char c = "#";`, `char c = '##';`], correcta: 0, codigoOpciones: true,
+      explicacion: "Un char es una sola letra o símbolo, entre comillas simples. Con comillas dobles sería un string." },
+    { t: "hueco", pregunta: "Crea una variable entera llamada vidas que guarde el número 3",
+      codigo: `[[int|string|let]] [[vidas|"vidas"|3]] = [[3|"tres"|vidas]];`,
+      explicacion: "Primero el tipo (int), luego el nombre, el = y el valor. Y el ; al final." },
+    { t: "ia_elige", pregunta: "Quieres que tu juego vaya más rápido y le vas a preguntar a la IA. ¿Cuál es el MEJOR mensaje?",
+      opciones: [
+        { txt: "hazlo rápido", ok: false, por: "La IA no sabe qué es «lo», ni qué programa tienes, ni en qué lenguaje. Va a tener que adivinar." },
+        { txt: "Estoy aprendiendo C#. Tengo la variable int velocidad = 5; que son los turnos por segundo de mi juego. ¿Qué número pongo para que vaya el doble de rápido? Explícame por qué.", ok: true, por: "¡Exacto! Dice el lenguaje, muestra el código, explica qué significa y pide que te explique. Así la respuesta te sirve y aprendes." },
+        { txt: "Escríbeme un juego de laberinto completo en C# que sea rápido", ok: false, por: "Te daría un juego que no es el tuyo y que no entiendes. No aprenderías nada." }
+      ],
+      regla: "Un buen mensaje para la IA tiene contexto (qué haces y en qué lenguaje), es específico y pide que te explique." },
+    { t: "codigo", titulo: "¡Personaliza tu juego!",
+      enunciado: "Estas tres variables controlan el juego. <b>Cambia al menos una</b> y mira el juego de la derecha: los cambios se ven al instante.",
+      inicial:
+`// 📦 Cambia los valores y mira el juego →
+
+int velocidad = 5;               // turnos por segundo (de 1 a 15)
+int vidasIniciales = 3;          // vidas al empezar (de 1 a 9)
+string colorJugador = "Yellow";  // prueba "Cyan", "Green", "Magenta", "Red"...
+`,
+      solucion:
+`int velocidad = 7;
+int vidasIniciales = 3;
+string colorJugador = "Cyan";
+`,
+      pistas: ["Cambia solo el valor, lo que está después del =. Por ejemplo: string colorJugador = \"Green\";",
+               "Los colores son los de la consola de C# (ConsoleColor): Blue, Cyan, Green, Magenta, Red, White, Yellow, Gray…"],
+      test: function (f, h) {
+        const colores = ["black", "darkblue", "darkgreen", "darkcyan", "darkred", "darkmagenta", "darkyellow", "gray", "darkgray", "blue", "green", "cyan", "red", "magenta", "yellow", "white"];
+        return [
+          { ok: Number.isInteger(f.velocidad) && f.velocidad >= 1 && f.velocidad <= 15, msg: "velocidad es un int entre 1 y 15  →  " + h.mostrar(f.velocidad) },
+          { ok: Number.isInteger(f.vidasIniciales) && f.vidasIniciales >= 1 && f.vidasIniciales <= 9, msg: "vidasIniciales es un int entre 1 y 9  →  " + h.mostrar(f.vidasIniciales) },
+          { ok: typeof f.colorJugador === "string" && colores.indexOf(f.colorJugador.toLowerCase()) >= 0 && f.colorJugador.toLowerCase() !== "black", msg: "colorJugador es un color de consola que se ve (como \"Cyan\")  →  " + h.mostrar(f.colorJugador) },
+          { ok: f.velocidad !== 5 || f.vidasIniciales !== 3 || f.colorJugador !== "Yellow", msg: "Cambiaste al menos uno de los valores" }
+        ];
+      } }
+  ]
+},
+// ======================================================================= 1
+{
+  icono: "🎨", titulo: "Decisiones: if", pieza: "Colores del laberinto",
+  funciones: ["ColorDeCasilla"],
+  ejercicios: [
+    { t: "teoria", titulo: "if: «si pasa esto, haz aquello»",
+      html: `<p>Los programas toman decisiones con <code class="in">if</code> («si»):</p>
+<pre class="codigo">if (clima == "lluvia")
+{
+    return "paraguas";
+}
+else if (clima == "sol")
+{
+    return "gorra";
+}
+else
+{
+    return "nada";
+}</pre>
+<div class="ejemplo"><b><code class="in">==</code> compara</b> (¿son iguales?). <b><code class="in">=</code> guarda</b> un valor. ¡No los confundas!<br><code class="in">else if</code> = «si no, pero si…». <code class="in">else</code> = «si no fue nada de lo anterior».<br>Las llaves <code class="in">{ }</code> encierran lo que se hace en cada caso.</div>
+<p>En el juego, el laberinto está hecho de letras (<code class="in">char</code>): <code class="in">'#'</code> pared, <code class="in">'.'</code> punto, <code class="in">'o'</code> power-up y <code class="in">' '</code> vacío. Ahora todo se dibuja en negro… ¡tú le vas a dar color!</p>` },
+    { t: "opcion", pregunta: "¿Qué devuelve este código si clima vale \"sol\"?",
+      codigo: `if (clima == "lluvia")\n{\n    return "paraguas";\n}\nelse if (clima == "sol")\n{\n    return "gorra";\n}\nreturn "nada";`,
+      opciones: [`"paraguas"`, `"gorra"`, `"nada"`], correcta: 1, codigoOpciones: true,
+      explicacion: "La primera condición no se cumple (no es lluvia), así que revisa el else if: sí es sol, y devuelve \"gorra\"." },
+    { t: "opcion", pregunta: "En C#, ¿cuál de estos símbolos COMPARA si dos cosas son iguales?",
+      opciones: ["=", "==", "==="], correcta: 1, codigoOpciones: true,
+      explicacion: "== compara. Un solo = guarda un valor. (=== es de otros lenguajes como JavaScript: en C# no existe.)" },
+    { t: "diagrama", pregunta: "Completa el diagrama de ColorDeCasilla",
+      nodos: [
+        { f: "inicio", txt: "Recibo una casilla (char)" },
+        { f: "dec", txt: "¿casilla es '#'?", si: "devolver [[\"Blue\"|\"Black\"]]" },
+        { f: "dec", txt: "¿casilla es [['.'|'#']]?", si: "devolver \"White\"" },
+        { f: "dec", txt: "¿casilla es 'o'?", si: "devolver [[\"Yellow\"|\"None\"]]" },
+        { f: "ret", txt: "Si no fue ninguna: devolver [[\"Black\"|\"Blue\"]]" }
+      ],
+      explicacion: "Pared azul, punto blanco, power-up amarillo. Si es un espacio vacío, negro (no se ve)." },
+    { t: "hueco", pregunta: "Completa el primer caso: si la casilla es una pared, devuelve azul",
+      codigo: `if (casilla [[==|=|===]] '#')\n{\n    [[return|int|if]] "Blue";\n}`,
+      explicacion: "== compara la casilla con '#'. return entrega la respuesta y termina el método." },
+    { t: "ia_escribe",
+      tarea: "No sabes bien cómo funciona <code class=\"in\">else if</code>. Escribe un mensaje para pedirle a la IA que te lo <b>explique</b>, pero <b>sin que te resuelva</b> el método ColorDeCasilla.",
+      criterios: [
+        { txt: "Dices qué lenguaje usas (C#)", re: "c#|c sharp|csharp" },
+        { txt: "Das contexto: que eres principiante o estás aprendiendo", re: "principiante|aprendiendo|aprender|estudiante|clase|empezando|nuevo|novato" },
+        { txt: "Dices cuál es tu duda (else if)", re: "else if|elseif|else" },
+        { txt: "Pides que te explique o te dé un ejemplo", re: "expli|ejemplo|como funciona|que es|que significa|entender|paso a paso" },
+        { txt: "Pides que NO te resuelva la tarea", re: "no me (la |lo )?(des|digas|hagas|resuelvas|escribas)|sin (darme|resolver|hacer|la solucion|el codigo|decirme|que me)|no (la|lo) resuelvas|hacerlo yo|lo quiero hacer|quiero hacerlo|no quiero (la solucion|que me)" }
+      ],
+      vaga: "¡Claro! Aquí tienes un juego de laberinto completo hecho en Python:\n```python\nimport pygame\npygame.init()\npantalla = pygame.display.set_mode((800, 600))\n# ... 250 líneas más ...\n```",
+      notaVaga: "😕 Tu mensaje no decía qué lenguaje usas, qué sabes ni qué necesitas. La IA tuvo que adivinar… y adivinó mal (¡ni siquiera es C#!).",
+      buena: "¡Buena pregunta! Te explico sin resolverte la tarea 😊\n\n`else if` significa **«si no, pero si…»**. Sirve para revisar varias opciones, una tras otra:\n```csharp\nif (edad < 13)\n{\n    return \"niño\";\n}\nelse if (edad < 18)\n{\n    return \"adolescente\";\n}\nreturn \"adulto\";\n```\nC# revisa la primera condición. Si no se cumple, pasa a la siguiente. En cuanto una se cumple, hace lo de adentro de sus llaves y ya no revisa las demás.\n\nPara tu método piensa: ¿qué casillas tienes que revisar y qué color devuelve cada una?",
+      regla: "Pide explicaciones, no respuestas: tú quieres aprender a hacerlo." },
+    { t: "codigo", titulo: "Dale color al laberinto",
+      enunciado: "Completa <code class=\"in\">ColorDeCasilla</code>. El caso de la pared ya está hecho: agrega los de <code class=\"in\">'.'</code> y <code class=\"in\">'o'</code>. Puedes usar los colores que quieras.",
+      inicial:
+`// Recibe: casilla → un char: '#', '.', 'o' o ' '
+// Devuelve: el nombre del color para dibujarla (un string)
+//   '#' → "Blue"    '.' → "White"    'o' → "Yellow"    otra → "Black"
+// Colores: "Blue", "Cyan", "Green", "Magenta", "Red", "White",
+//          "Yellow", "Gray", "DarkBlue", "DarkGreen", "DarkYellow"...
+
+string ColorDeCasilla(char casilla)
+{
+    if (casilla == '#')
+    {
+        return "Blue";
+    }
+    // ✏️ agrega aquí un else if para '.' y otro para 'o'
+
+    return "Black";
+}
+`,
+      solucion:
+`string ColorDeCasilla(char casilla)
+{
+    if (casilla == '#')
+    {
+        return "Blue";
+    }
+    else if (casilla == '.')
+    {
+        return "White";
+    }
+    else if (casilla == 'o')
+    {
+        return "Yellow";
+    }
+    return "Black";
+}
+`,
+      pistas: ["Justo debajo de la } del if, escribe  else if (casilla == '.')  y abre sus propias llaves { }.",
+               "Adentro va  return \"White\";  y luego haz lo mismo para 'o'. Ojo: '.' es un char (comillas simples) y \"White\" es un string (comillas dobles)."],
+      test: function (f, h) {
+        const colores = ["darkblue", "darkgreen", "darkcyan", "darkred", "darkmagenta", "darkyellow", "gray", "darkgray", "blue", "green", "cyan", "red", "magenta", "yellow", "white"];
+        const p = f.ColorDeCasilla("#"), d = f.ColorDeCasilla("."), o = f.ColorDeCasilla("o"), v = f.ColorDeCasilla(" ");
+        const visible = function (x) { return typeof x === "string" && colores.indexOf(x.toLowerCase()) >= 0; };
+        return [
+          { ok: visible(p), msg: "ColorDeCasilla('#') da un color que se ve  →  " + h.mostrar(p) },
+          { ok: visible(d), msg: "ColorDeCasilla('.') da un color que se ve  →  " + h.mostrar(d) },
+          { ok: visible(o) && o !== d, msg: "ColorDeCasilla('o') da un color distinto al del punto  →  " + h.mostrar(o) },
+          { ok: v === "Black", msg: "ColorDeCasilla(' ') da \"Black\"  →  " + h.mostrar(v) }
+        ];
+      } }
+  ]
+},
+// ======================================================================= 2
+{
+  icono: "🕹️", titulo: "Métodos", pieza: "Movimiento",
+  funciones: ["SiguienteFila", "SiguienteColumna"],
+  ejercicios: [
+    { t: "teoria", titulo: "Un método es una máquina",
+      html: `<p>Un <b>método</b> recibe datos, hace algo con ellos y <b>devuelve</b> (<code class="in">return</code>) un resultado. Como una licuadora: entra fruta, sale jugo.</p>
+<pre class="codigo">int Doble(int numero)
+{
+    return numero * 2;
+}
+
+Doble(5)   <span class="com">// da 10</span></pre>
+<div class="ejemplo">En C#, <b>antes del nombre va el tipo de lo que devuelve</b> (<code class="in">int</code>), y cada dato que recibe (parámetro) también lleva su tipo: <code class="in">int numero</code>.</div>
+<p>El laberinto es una tabla de <b>filas</b> y <b>columnas</b>. La <b>fila 0 es la de arriba</b>: para subir, la fila se hace más chica (<code class="in">fila - 1</code>); para bajar, más grande (<code class="in">fila + 1</code>). La columna 0 es la de la izquierda.</p>
+<p>Tu jugador no se mueve porque el juego no sabe calcular «si estoy aquí y voy hacia allá, ¿dónde quedo?».</p>` },
+    { t: "opcion", pregunta: "¿Qué da Doble(4)?", codigo: `int Doble(int numero)\n{\n    return numero * 2;\n}`,
+      opciones: ["4", "8", "numero * 2"], correcta: 1,
+      explicacion: "numero vale 4, y 4 * 2 = 8. El método devuelve el resultado, no el texto de la operación." },
+    { t: "opcion", pregunta: "¿Qué indica la palabra int al principio de este método?", codigo: `int SiguienteFila(int fila, string direccion)`,
+      opciones: ["Que el método devuelve un número entero", "Que el método se llama int", "Que el método no devuelve nada"], correcta: 0,
+      explicacion: "El tipo antes del nombre es lo que devuelve. Si no devolviera nada, diría void." },
+    { t: "opcion", pregunta: "Estás en la fila 5 y te mueves hacia ARRIBA. ¿En qué fila quedas?",
+      opciones: ["Fila 4", "Fila 6", "Fila 5"], correcta: 0,
+      explicacion: "La fila 0 está arriba del todo, así que subir es restar: 5 - 1 = 4." },
+    { t: "ordenar", pregunta: "Ordena las líneas para armar el método SiguienteFila (solo el caso de subir)",
+      lineas: ["int SiguienteFila(int fila, string direccion)", "{", "if (direccion == \"arriba\")", "{", "return fila - 1;", "}", "return fila;", "}"],
+      explicacion: "Primero va la firma del método y su llave; adentro el if con su return; y al final, si no se cumplió, se devuelve la misma fila." },
+    { t: "ia_revisa", pregunta: "Le pediste a la IA el método SiguienteColumna y te respondió esto. Tiene UN error. Toca la línea equivocada.",
+      lineas: ["int SiguienteColumna(int columna, string direccion)", "{", "    if (direccion == \"izquierda\")", "    {", "        return columna + 1;", "    }", "    if (direccion == \"derecha\")", "    {", "        return columna + 1;", "    }", "    return columna;", "}"],
+      mala: 4,
+      explicacion: "Ir a la izquierda es RESTAR: columna - 1. La IA puso + 1 en los dos casos. Si lo copiabas sin revisar, tu jugador iría al revés.",
+      regla: "La IA se equivoca. Lee y prueba siempre lo que te da antes de usarlo." },
+    { t: "codigo", titulo: "¡Haz que tu jugador se mueva!",
+      enunciado: "Completa los dos métodos. Cuando funcionen, mueve al jugador con las flechas. (Va a atravesar paredes: eso se arregla en la siguiente lección.)",
+      inicial:
+`// Las direcciones son: "arriba", "abajo", "izquierda", "derecha"
+// Subir = restar fila. Bajar = sumar fila.
+// Izquierda = restar columna. Derecha = sumar columna.
+
+int SiguienteFila(int fila, string direccion)
+{
+    if (direccion == "arriba")
+    {
+        return fila - 1;
+    }
+    // ✏️ ¿y si es "abajo"?
+
+    return fila;
+}
+
+int SiguienteColumna(int columna, string direccion)
+{
+    // ✏️ igual que arriba, pero con "izquierda" y "derecha"
+
+    return columna;
+}
+`,
+      solucion:
+`int SiguienteFila(int fila, string direccion)
+{
+    if (direccion == "arriba")
+    {
+        return fila - 1;
+    }
+    else if (direccion == "abajo")
+    {
+        return fila + 1;
+    }
+    return fila;
+}
+
+int SiguienteColumna(int columna, string direccion)
+{
+    if (direccion == "izquierda")
+    {
+        return columna - 1;
+    }
+    else if (direccion == "derecha")
+    {
+        return columna + 1;
+    }
+    return columna;
+}
+`,
+      pistas: ["Para \"abajo\" copia el if de \"arriba\", ponle else adelante y cambia el - por +.",
+               "En SiguienteColumna usa la variable columna (no fila):  if (direccion == \"izquierda\") { return columna - 1; }"],
+      test: function (f, h) {
+        return [
+          h.caso('SiguienteFila(5, "arriba")', f.SiguienteFila(5, "arriba"), 4),
+          h.caso('SiguienteFila(5, "abajo")', f.SiguienteFila(5, "abajo"), 6),
+          h.caso('SiguienteFila(5, "izquierda")', f.SiguienteFila(5, "izquierda"), 5),
+          h.caso('SiguienteColumna(5, "izquierda")', f.SiguienteColumna(5, "izquierda"), 4),
+          h.caso('SiguienteColumna(5, "derecha")', f.SiguienteColumna(5, "derecha"), 6),
+          h.caso('SiguienteColumna(5, "arriba")', f.SiguienteColumna(5, "arriba"), 5)
+        ];
+      } }
+  ]
+},
+// ======================================================================= 3
+{
+  icono: "🧱", titulo: "bool: verdadero o falso", pieza: "Paredes sólidas",
+  funciones: ["EsPared"],
+  ejercicios: [
+    { t: "teoria", titulo: "true y false",
+      html: `<p>Algunas preguntas solo tienen dos respuestas: <b>sí o no</b>. En C# son <code class="in">true</code> (verdadero) y <code class="in">false</code> (falso), y su tipo es <code class="in">bool</code>. Se escriben en minúsculas y <b>sin comillas</b>.</p>
+<pre class="codigo">bool mayor = 5 > 3;      <span class="com">// true</span>
+bool igual = '#' == '.'; <span class="com">// false</span></pre>
+<div class="ejemplo">Una comparación <b>ya es</b> un bool. Por eso estos dos métodos hacen lo mismo:
+<pre class="codigo">bool EsAdulto(int edad)
+{
+    if (edad >= 18)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool EsAdulto(int edad)
+{
+    return edad >= 18;   <span class="com">// versión corta</span>
+}</pre></div>
+<p>Ahora tu jugador atraviesa las paredes como fantasma 👻. El juego necesita preguntar: «¿esta casilla es pared?».</p>` },
+    { t: "opcion", pregunta: "¿Qué da esta comparación?", codigo: `7 < 2`,
+      opciones: ["true", "false", "7"], correcta: 1, codigoOpciones: true,
+      explicacion: "¿7 es menor que 2? No. Entonces es false." },
+    { t: "opcion", pregunta: "Si casilla vale '#', ¿qué da esto?", codigo: `casilla == '#'`,
+      opciones: ["true", "false", "'#'"], correcta: 0, codigoOpciones: true,
+      explicacion: "Compara '#' con '#': son iguales, así que da true." },
+    { t: "opcion", pregunta: "Un método dice bool EsPared(char casilla). ¿Cuál de estos return es correcto?",
+      opciones: [`return true;`, `return "true";`, `return 1;`], correcta: 0, codigoOpciones: true,
+      explicacion: "El método devuelve bool, así que debe devolver true o false, sin comillas. \"true\" con comillas es un string y C# marcaría error." },
+    { t: "diagrama", pregunta: "Completa el diagrama de EsPared",
+      nodos: [
+        { f: "inicio", txt: "Recibo una casilla (char)" },
+        { f: "dec", txt: "¿casilla es [['#'|'.'|' ']]?", si: "devolver [[true|false]]" },
+        { f: "ret", txt: "Si no: devolver [[false|true]]" }
+      ],
+      explicacion: "Solo '#' es pared: devuelve true. Cualquier otra casilla, false." },
+    { t: "ia_elige", pregunta: "¿Cuál de estos mensajes NO deberías mandarle nunca a una IA?",
+      opciones: [
+        { txt: "¿Qué es un bool en C#? Dame un ejemplo sencillo.", ok: false, por: "Este mensaje está muy bien: es una duda clara y no tiene datos personales." },
+        { txt: "Mi método EsPared en C# siempre devuelve false. Este es mi código: bool EsPared(char casilla) { return false; } ¿Por qué pasa?", ok: false, por: "Este también está bien: muestra el código y explica el problema." },
+        { txt: "Soy Ana López, vivo en Calle Robles 24, mi contraseña de la escuela es ana2010. Hazme la tarea de programación.", ok: true, por: "¡Correcto! Nunca compartas tu nombre completo, dirección ni contraseñas. Y pedirle que te haga la tarea no te ayuda a aprender." }
+      ],
+      regla: "Nunca compartas contraseñas ni datos personales (tuyos o de otros) con una IA." },
+    { t: "codigo", titulo: "Paredes de verdad",
+      enunciado: "Completa <code class=\"in\">EsPared</code>: devuelve <code class=\"in\">true</code> si la casilla es <code class=\"in\">'#'</code>, y <code class=\"in\">false</code> si no. Luego intenta atravesar una pared en el juego.",
+      inicial:
+`// Recibe: casilla → '#', '.', 'o' o ' '
+// Devuelve: true si es pared, false si no
+
+bool EsPared(char casilla)
+{
+    // ✏️ escribe aquí tu if
+
+    return false;
+}
+`,
+      solucion:
+`bool EsPared(char casilla)
+{
+    if (casilla == '#')
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+`,
+      pistas: ["Usa un if que compare casilla con '#' (comillas simples, porque es un char). Adentro, return true;",
+               "Ojo: true y false se escriben SIN comillas y en minúsculas."],
+      test: function (f, h) {
+        return [
+          h.caso("EsPared('#')", f.EsPared("#"), true),
+          h.caso("EsPared('.')", f.EsPared("."), false),
+          h.caso("EsPared('o')", f.EsPared("o"), false),
+          h.caso("EsPared(' ')", f.EsPared(" "), false)
+        ];
+      } }
+  ]
+},
+// ======================================================================= 4
+{
+  icono: "🍒", titulo: "Números", pieza: "Comer puntos",
+  funciones: ["PuntosDeCasilla"],
+  ejercicios: [
+    { t: "teoria", titulo: "Sumar y acumular",
+      html: `<p>Con números puedes hacer operaciones: <code class="in">+</code> sumar, <code class="in">-</code> restar, <code class="in">*</code> multiplicar, <code class="in">/</code> dividir.</p>
+<div class="ejemplo">Esta línea parece rara, pero es muy común:
+<pre class="codigo">puntaje = puntaje + 10;
+puntaje += 10;            <span class="com">// lo mismo, más corto</span></pre>
+Se lee <b>de derecha a izquierda</b>: «toma lo que vale <code class="in">puntaje</code>, súmale 10 y guarda el resultado otra vez en <code class="in">puntaje</code>». Es como una <b>alcancía</b>: cada moneda se suma a lo que ya había. Se le llama <b>acumulador</b>.</div>
+<p>El juego ya hace la suma por ti. Solo necesita saber <b>cuántos puntos vale</b> cada casilla: punto <code class="in">'.'</code> = 10, power-up <code class="in">'o'</code> = 50, lo demás = 0.</p>` },
+    { t: "opcion", pregunta: "¿Cuánto vale p al final?", codigo: `int p = 20;\np = p + 10;`,
+      opciones: ["10", "20", "30"], correcta: 2,
+      explicacion: "p empieza en 20. Luego se guarda en p el valor 20 + 10 = 30." },
+    { t: "hueco", pregunta: "Suma 50 al puntaje (como una alcancía)",
+      codigo: `puntaje = [[puntaje|50|0]] [[+|-|=]] [[50|puntaje|10]];`,
+      explicacion: "puntaje = puntaje + 50; → el nuevo puntaje es el anterior más 50." },
+    { t: "ia_escribe",
+      tarea: "Escribiste este código y Visual Studio marca un error. Escribe el mensaje que le mandarías a la IA para <b>entender</b> qué pasó.<pre class=\"codigo\">int PuntosDeCasilla(char casilla)\n{\n    if (casilla == \".\")\n    {\n        return 10;\n    }\n    return 0;\n}</pre><div class=\"error-codigo\">error CS0019: Operator '==' cannot be applied to operands of type 'char' and 'string'</div>",
+      criterios: [
+        { txt: "Pegas el mensaje de error exacto", re: "cs0019|operator '?=='? cannot|cannot be applied" },
+        { txt: "Pegas tu código (o la línea del problema)", re: "puntosdecasilla|casilla ==" },
+        { txt: "Dices qué lenguaje usas", re: "c#|c sharp|csharp" },
+        { txt: "Dices qué querías que hiciera tu código", re: "quiero|queria|deberia|intento|intentando|esperaba|que (haga|devuelva|regrese|de)|sirve para|tiene que|para que" },
+        { txt: "Pides que te explique el error", re: "expli|por que|que significa|que quiere decir|entender|que hice mal|donde esta|en que me equivoque" }
+      ],
+      vaga: "Los errores de compilación pueden deberse a muchas cosas: tipos, puntos y comas, llaves, comillas, nombres mal escritos… Revisa tu código con cuidado.",
+      notaVaga: "😕 Sin el mensaje de error y sin tu código, la IA no sabe qué pasó y solo te da una respuesta general que no sirve.",
+      buena: "El error **CS0019** dice: «no puedo usar `==` entre un **char** y un **string**».\n\nEn C# son tipos distintos:\n• `'.'` con comillas **simples** es un `char` (una letra).\n• `\".\"` con comillas **dobles** es un `string` (un texto).\n\nTu parámetro `casilla` es `char`, pero lo comparas con `\".\"`, que es un string. C# no deja comparar cosas de tipos diferentes.\n\n💡 ¿Qué tipo de comillas deberías usar para que los dos lados sean `char`?",
+      regla: "Cuando algo falle, pega el error exacto (con su código, como CS0019) y tu código. Sin eso, la IA solo puede adivinar." },
+    { t: "codigo", titulo: "¡A comer puntos!",
+      enunciado: "Completa <code class=\"in\">PuntosDeCasilla</code>: <code class=\"in\">'.'</code> vale 10, <code class=\"in\">'o'</code> vale 50 y cualquier otra cosa vale 0. Luego ve a comer puntos en el juego.",
+      inicial:
+`// Recibe: casilla → '#', '.', 'o' o ' '
+// Devuelve: cuántos puntos vale (un int)
+//   '.' → 10      'o' → 50      otra → 0
+
+int PuntosDeCasilla(char casilla)
+{
+    // ✏️
+
+    return 0;
+}
+`,
+      solucion:
+`int PuntosDeCasilla(char casilla)
+{
+    if (casilla == '.')
+    {
+        return 10;
+    }
+    else if (casilla == 'o')
+    {
+        return 50;
+    }
+    return 0;
+}
+`,
+      pistas: ["Es muy parecido a ColorDeCasilla, pero en vez de colores devuelves números.",
+               "Los números van SIN comillas: return 10;  y las casillas con comillas simples: '.'"],
+      test: function (f, h) {
+        return [
+          h.caso("PuntosDeCasilla('.')", f.PuntosDeCasilla("."), 10),
+          h.caso("PuntosDeCasilla('o')", f.PuntosDeCasilla("o"), 50),
+          h.caso("PuntosDeCasilla(' ')", f.PuntosDeCasilla(" "), 0),
+          h.caso("PuntosDeCasilla('#')", f.PuntosDeCasilla("#"), 0)
+        ];
+      } }
+  ]
+},
+// ======================================================================= 5
+{
+  icono: "🔁", titulo: "Ciclos for", pieza: "Contar puntos y ganar",
+  funciones: ["ContarPuntos"],
+  ejercicios: [
+    { t: "teoria", titulo: "Repetir sin cansarse",
+      html: `<p>Un <b>ciclo <code class="in">for</code></b> repite código. Este repite 3 veces:</p>
+<pre class="codigo">for (int i = 0; i < 3; i++)
+{
+    <span class="com">// esto se repite con i = 0, i = 1 e i = 2</span>
+}</pre>
+<div class="ejemplo">Se lee: «empieza con <code class="in">i</code> en 0; <b>mientras</b> <code class="in">i</code> sea menor que 3; súmale 1 a <code class="in">i</code> (<code class="in">i++</code>)».</div>
+<p>Una <b>lista</b> se llama <b>arreglo</b>: <code class="in">string[] frutas = { "pera", "uva" };</code>. Cada cosa tiene una posición que empieza en <b>0</b>: <code class="in">frutas[0]</code> es "pera".</p>
+<p>El mapa es una <b>tabla</b> (matriz) de <code class="in">char</code>: su tipo es <code class="in">char[,]</code> y se lee con <code class="in">mapa[fila, columna]</code>. <code class="in">mapa.GetLength(0)</code> dice cuántas filas tiene y <code class="in">mapa.GetLength(1)</code>, cuántas columnas.</p>
+<p>Para revisar toda la tabla se pone un <code class="in">for</code> <b>dentro de otro</b>: uno recorre las filas y el otro, las columnas. Como leer un libro: renglón por renglón y, en cada renglón, letra por letra.</p>` },
+    { t: "opcion", pregunta: "¿Cuántas veces se repite este ciclo?", codigo: `for (int i = 0; i < 4; i++)\n{\n    ...\n}`,
+      opciones: ["3", "4", "5"], correcta: 1,
+      explicacion: "i vale 0, 1, 2 y 3. Cuando llega a 4, ya no es menor que 4 y se detiene. Son 4 vueltas." },
+    { t: "opcion", pregunta: "¿Qué da frutas[1]?", codigo: `string[] frutas = { "pera", "uva", "kiwi" };`,
+      opciones: [`"pera"`, `"uva"`, `"kiwi"`], correcta: 1, codigoOpciones: true,
+      explicacion: "Las posiciones empiezan en 0: frutas[0] es \"pera\" y frutas[1] es \"uva\"." },
+    { t: "opcion", pregunta: "El mapa del juego tiene 21 filas y 19 columnas. ¿Qué da mapa.GetLength(1)?",
+      opciones: ["21", "19", "2"], correcta: 1, codigoOpciones: true,
+      explicacion: "GetLength(0) son las filas (21) y GetLength(1) son las columnas (19)." },
+    { t: "diagrama", pregunta: "Completa el diagrama de ContarPuntos",
+      nodos: [
+        { f: "inicio", txt: "Recibo el mapa (char[,])" },
+        { f: "proc", txt: "int contador = [[0|1|10]]" },
+        { f: "ciclo", txt: "Para cada fila del mapa…" },
+        { f: "ciclo", txt: "…para cada [[columna|fila|punto]] de esa fila", nivel: 1 },
+        { f: "dec", txt: "¿casilla es '.' [[o (||)|y (&&)]] es 'o'?", si: "contador [[+= 1|-= 1]]", nivel: 2 },
+        { f: "ret", txt: "Al terminar TODOS los ciclos: devolver [[contador|0|mapa]]" }
+      ],
+      explicacion: "El contador empieza en 0, recorremos filas y columnas, sumamos 1 por cada punto o power-up, y devolvemos el total hasta el final." },
+    { t: "ia_revisa", pregunta: "Le pediste a la IA ContarPuntos. Su código siempre devuelve 0 o 1. Toca la línea del error.",
+      lineas: ["int ContarPuntos(char[,] mapa)", "{", "    int contador = 0;", "    for (int fila = 0; fila < mapa.GetLength(0); fila++)", "    {", "        for (int col = 0; col < mapa.GetLength(1); col++)", "        {", "            if (mapa[fila, col] == '.' || mapa[fila, col] == 'o')", "            {", "                contador++;", "            }", "            return contador;", "        }", "    }", "}"],
+      mala: 11,
+      explicacion: "El return está DENTRO de los ciclos: el método termina en la primera casilla. Debe ir al final, afuera de los dos for.",
+      regla: "Que el código de la IA «se vea bien» no significa que funcione. Pruébalo con ejemplos." },
+    { t: "codigo", titulo: "Cuenta los puntos (¡y gana!)",
+      enunciado: "Completa <code class=\"in\">ContarPuntos</code>. Cuando funcione, el marcador dirá cuántos quedan y, si te los comes todos, <b>¡ganas!</b>",
+      inicial:
+`// mapa es una tabla de char: mapa[fila, columna]
+// mapa.GetLength(0) → cuántas filas hay
+// mapa.GetLength(1) → cuántas columnas hay
+// Devuelve: cuántas casillas tienen '.' o 'o'
+// || significa "o":   if (a == 1 || a == 2)
+
+int ContarPuntos(char[,] mapa)
+{
+    int contador = 0;
+
+    for (int fila = 0; fila < mapa.GetLength(0); fila++)
+    {
+        // ✏️ escribe aquí el for de las columnas
+        //    y adentro un if que sume 1 al contador
+
+    }
+
+    return -1; // ✏️ ¿qué debes devolver?
+}
+`,
+      solucion:
+`int ContarPuntos(char[,] mapa)
+{
+    int contador = 0;
+    for (int fila = 0; fila < mapa.GetLength(0); fila++)
+    {
+        for (int columna = 0; columna < mapa.GetLength(1); columna++)
+        {
+            if (mapa[fila, columna] == '.' || mapa[fila, columna] == 'o')
+            {
+                contador++;
+            }
+        }
+    }
+    return contador;
+}
+`,
+      pistas: ["El segundo for es igual al primero, pero con columna y mapa.GetLength(1).",
+               "Adentro: if (mapa[fila, columna] == '.' || mapa[fila, columna] == 'o') { contador++; }",
+               "Al final cambia return -1; por return contador;"],
+      test: function (f, h) {
+        return [
+          h.caso("ContarPuntos({ {'#','.'}, {'.','o'} })", f.ContarPuntos([["#", "."], [".", "o"]]), 3),
+          h.caso("ContarPuntos({ {'#',' '}, {'#','#'} })", f.ContarPuntos([["#", " "], ["#", "#"]]), 0),
+          h.caso("ContarPuntos({ {'#','#','.'} })", f.ContarPuntos([["#", "#", "."]]), 1),
+          h.caso("ContarPuntos(mapa del juego)", f.ContarPuntos(h.mapa()), 182)
+        ];
+      } }
+  ]
+},
+// ======================================================================= 6
+{
+  icono: "👻", titulo: "Azar y arreglos", pieza: "Fantasmas que se mueven",
+  funciones: ["DireccionAlAzar"],
+  ejercicios: [
+    { t: "teoria", titulo: "Números al azar con Random",
+      html: `<p>Los juegos usan el <b>azar</b> para no ser siempre iguales. En C# se usa un objeto <code class="in">Random</code>. En tu juego ya existe uno llamado <code class="in">azar</code>:</p>
+<pre class="codigo">Random azar = new Random();   <span class="com">// (ya está creado)</span>
+
+azar.Next(0, 3)     <span class="com">// 0, 1 o 2   → ¡el 3 NO sale!</span>
+opciones.Length     <span class="com">// cuántas cosas tiene el arreglo</span></pre>
+<div class="ejemplo">Para elegir una posición al azar de un arreglo de 3 cosas: <code class="in">azar.Next(0, opciones.Length)</code> da <b>0, 1 o 2</b>. ¡Justo las posiciones del arreglo!</div>
+<p>Los fantasmas están quietos. El juego te da un arreglo con las direcciones a las que <b>sí</b> pueden ir y tú eliges una al azar.</p>` },
+    { t: "opcion", pregunta: "¿Qué números puede dar azar.Next(0, 4)?", opciones: ["0, 1, 2 o 3", "1, 2, 3 o 4", "0, 1, 2, 3 o 4"], correcta: 0,
+      explicacion: "El primer número sí puede salir; el segundo NO. Así que da 0, 1, 2 o 3." },
+    { t: "opcion", pregunta: "¿Qué da opciones.Length?", codigo: `string[] opciones = { "arriba", "izquierda", "derecha" };`,
+      opciones: ["2", "3", "\"derecha\""], correcta: 1, codigoOpciones: true,
+      explicacion: "Length es cuántas cosas tiene el arreglo: 3. (La última posición es la 2, porque se empieza en 0.)" },
+    { t: "hueco", pregunta: "Completa: elige una dirección al azar del arreglo opciones",
+      codigo: `int numero = azar.Next(0, [[opciones.Length|10|opciones]]);\nreturn [[opciones[numero]|numero|opciones]];`,
+      explicacion: "azar.Next(0, opciones.Length) da una posición válida y devolvemos lo que hay en esa posición." },
+    { t: "ia_elige", pregunta: "Le preguntaste a la IA y te contestó muy segura: «azar.Next(0, 4) puede dar 0, 1, 2, 3 o 4». ¿Qué haces?",
+      opciones: [
+        { txt: "Le creo y escribo mi código así.", ok: false, por: "¡Cuidado! Eso es falso: el 4 nunca sale. La IA a veces inventa cosas y las dice con mucha seguridad." },
+        { txt: "Lo compruebo: escribo Console.WriteLine(azar.Next(0, 4)); varias veces, o lo busco en la documentación oficial de Microsoft (Microsoft Learn).", ok: true, por: "¡Exacto! Comprobar es la regla más importante. Una prueba rápida o la documentación oficial te dicen la verdad." },
+        { txt: "Le pregunto lo mismo muchas veces hasta que me diga otra cosa.", ok: false, por: "Repetir la pregunta no te asegura que la respuesta sea correcta. Lo que sirve es comprobarlo." }
+      ],
+      regla: "La IA puede inventar cosas con mucha seguridad. Comprueba lo importante con una prueba o en la documentación oficial." },
+    { t: "codigo", titulo: "¡Que se muevan los fantasmas!",
+      enunciado: "Completa <code class=\"in\">DireccionAlAzar</code>: recibe un arreglo de direcciones y devuelve <b>una de ellas al azar</b>. Puedes usar <code class=\"in\">Console.WriteLine(...)</code> para ver valores abajo.",
+      inicial:
+`// opciones es un arreglo con las direcciones SIN pared, por ejemplo:
+//   { "arriba", "izquierda", "derecha" }
+// Devuelve: UNA de ellas, al azar.
+// Ya existe:  Random azar = new Random();
+//   azar.Next(0, 3)  → 0, 1 o 2 (el 3 NO sale)
+
+string DireccionAlAzar(string[] opciones)
+{
+    // ✏️ 1) saca una posición al azar
+    // ✏️ 2) devuelve lo que hay en esa posición
+
+    return null; // null = "nada": el fantasma no se mueve
+}
+`,
+      solucion:
+`string DireccionAlAzar(string[] opciones)
+{
+    int numero = azar.Next(0, opciones.Length);
+    return opciones[numero];
+}
+`,
+      pistas: ["Primero: int numero = azar.Next(0, opciones.Length);",
+               "Luego: return opciones[numero];  (y borra el return null;)"],
+      test: function (f, h) {
+        const ops = ["arriba", "abajo", "izquierda"];
+        const vistos = {};
+        let fuera = null;
+        for (let k = 0; k < 300; k++) {
+          const r = f.DireccionAlAzar(ops.slice());
+          if (ops.indexOf(r) < 0) { fuera = r; break; }
+          vistos[r] = true;
+        }
+        const distintos = Object.keys(vistos).length;
+        return [
+          { ok: fuera === null, msg: fuera === null ? "Siempre devuelve una de las opciones" : "Devolvió " + h.mostrar(fuera) + ", que no está en { \"arriba\", \"abajo\", \"izquierda\" }" },
+          { ok: fuera === null && distintos === 3, msg: "En 300 intentos salen las 3 opciones (es al azar)  →  salieron " + distintos },
+          h.caso('DireccionAlAzar({ "derecha" })', f.DireccionAlAzar(["derecha"]), "derecha")
+        ];
+      } }
+  ]
+},
+// ======================================================================= 7
+{
+  icono: "💥", titulo: "Y / O (&& ||)", pieza: "Choques con fantasmas",
+  funciones: ["HayChoque"],
+  ejercicios: [
+    { t: "teoria", titulo: "Juntar condiciones",
+      html: `<p>A veces una sola condición no basta:</p>
+<pre class="codigo">if (tengoDinero && tiendaAbierta) { ... }  <span class="com">// && = Y: las DOS</span>
+if (llueve || hayNieve) { ... }            <span class="com">// || = O: al menos UNA</span></pre>
+<div class="ejemplo">Un fantasma te atrapa si está en tu <b>misma fila Y en tu misma columna</b>. Si solo comparte la fila, está en tu renglón… pero lejos.</div>
+<p>Ahora los fantasmas te atraviesan sin hacerte nada. ¡Vamos a cambiar eso!</p>` },
+    { t: "opcion", pregunta: "¿Qué da esto?", codigo: `true && false`, opciones: ["true", "false"], correcta: 1, codigoOpciones: true,
+      explicacion: "Con && las dos cosas deben ser true. Como una es false, el resultado es false." },
+    { t: "opcion", pregunta: "¿Qué da esto?", codigo: `true || false`, opciones: ["true", "false"], correcta: 0, codigoOpciones: true,
+      explicacion: "Con || basta con que una sea true." },
+    { t: "diagrama", pregunta: "Completa el diagrama de HayChoque",
+      nodos: [
+        { f: "inicio", txt: "Recibo dónde está el jugador y dónde está el fantasma" },
+        { f: "dec", txt: "¿misma fila [[Y (&&)|O (||)]] misma columna?", si: "devolver [[true|false]]" },
+        { f: "ret", txt: "Si no: devolver [[false|true]]" }
+      ],
+      explicacion: "Solo hay choque si coinciden la fila Y la columna." },
+    { t: "ia_escribe",
+      tarea: "Quieres comprobar tu método <code class=\"in\">HayChoque</code>. Pídele a la IA <b>ejemplos para probarlo</b> (casos de prueba), pero <b>sin que te dé el código</b>.",
+      criterios: [
+        { txt: "Dices de qué método se trata (HayChoque)", re: "haychoque" },
+        { txt: "Explicas qué hace: compara fila y columna del jugador y del fantasma", re: "fila|columna|posicion|casilla" },
+        { txt: "Pides ejemplos o casos de prueba", re: "ejemplo|caso|prueba|probar|test" },
+        { txt: "Pides que NO te dé el código", re: "(no|sin) (me )?(des|darme|escribas|escribir|el codigo|codigo|la solucion|resolver)|solo (los |unos )?(ejemplos|casos)" },
+        { txt: "Dices qué lenguaje usas", re: "c#|c sharp|csharp" }
+      ],
+      vaga: "¡Listo! Aquí tienes el código:\n```csharp\nbool HayChoque(int a, int b, int c, int d)\n{\n    return a == c || b == d;\n}\n```",
+      notaVaga: "😕 Tu mensaje no era claro y la IA te dio código… ¡que además está mal! (usa || en lugar de &&). Si lo copiabas, perderías vidas sin razón.",
+      buena: "¡Muy bien pensado! Probar con ejemplos es justo lo que hacen los programadores. Casos para `HayChoque(filaJugador, columnaJugador, filaFantasma, columnaFantasma)`:\n\n• `HayChoque(3, 4, 3, 4)` → **true** (misma casilla)\n• `HayChoque(3, 4, 3, 5)` → **false** (misma fila, otra columna)\n• `HayChoque(3, 4, 2, 4)` → **false** (misma columna, otra fila)\n• `HayChoque(0, 0, 9, 9)` → **false** (muy lejos)\n\nPuedes probarlos con `Console.WriteLine(HayChoque(3, 4, 3, 5));`. Fíjate en el 2º y el 3º: si alguno te da true, revisa si usaste `||` en lugar de `&&`.",
+      regla: "La IA también sirve para comprobar tu trabajo: pídele ejemplos y casos de prueba." },
+    { t: "codigo", titulo: "¡Cuidado con los fantasmas!",
+      enunciado: "Completa <code class=\"in\">HayChoque</code>: devuelve <code class=\"in\">true</code> si el jugador y el fantasma están en la misma fila <b>y</b> la misma columna. Después… ¡intenta no perder!",
+      inicial:
+`// Devuelve: true si están en la MISMA casilla, false si no.
+// && significa "y"
+
+bool HayChoque(int filaJugador, int columnaJugador, int filaFantasma, int columnaFantasma)
+{
+    // ✏️
+
+    return false;
+}
+`,
+      solucion:
+`bool HayChoque(int filaJugador, int columnaJugador, int filaFantasma, int columnaFantasma)
+{
+    if (filaJugador == filaFantasma && columnaJugador == columnaFantasma)
+    {
+        return true;
+    }
+    return false;
+}
+`,
+      pistas: ["Compara filaJugador con filaFantasma, y columnaJugador con columnaFantasma.",
+               "if (filaJugador == filaFantasma && columnaJugador == ____) { return true; }"],
+      test: function (f, h) {
+        return [
+          h.caso("HayChoque(3, 4, 3, 4)", f.HayChoque(3, 4, 3, 4), true),
+          h.caso("HayChoque(3, 4, 3, 5)", f.HayChoque(3, 4, 3, 5), false),
+          h.caso("HayChoque(3, 4, 2, 4)", f.HayChoque(3, 4, 2, 4), false),
+          h.caso("HayChoque(0, 0, 9, 9)", f.HayChoque(0, 0, 9, 9), false)
+        ];
+      } }
+  ]
+},
+// ======================================================================= 8
+{
+  icono: "📏", titulo: "Distancia", pieza: "Radar de fantasmas",
+  funciones: ["Distancia"],
+  ejercicios: [
+    { t: "teoria", titulo: "¿Qué tan lejos está?",
+      html: `<p>En una cuadrícula no puedes ir en diagonal: caminas por «cuadras», como en una ciudad. La distancia es:</p>
+<div class="ejemplo"><b>distancia = (diferencia de filas) + (diferencia de columnas)</b></div>
+<p>Pero una resta puede salir negativa (<code class="in">2 - 5 = -3</code>), y una distancia no puede ser negativa. Para eso existe <code class="in">Math.Abs</code> (con A mayúscula), que le quita el signo menos:</p>
+<pre class="codigo">Math.Abs(-3)   <span class="com">// 3</span>
+Math.Abs(3)    <span class="com">// 3</span></pre>
+<p>Con este método, tu juego tendrá un <b>radar</b> que dice qué tan cerca está el fantasma más próximo. ¡Y en la siguiente lección los fantasmas lo usarán para perseguirte!</p>` },
+    { t: "opcion", pregunta: "¿Qué da Math.Abs(-7)?", opciones: ["-7", "7", "0"], correcta: 1, codigoOpciones: true,
+      explicacion: "Math.Abs quita el signo: el valor absoluto de -7 es 7." },
+    { t: "opcion", pregunta: "¿Cuál es la distancia de la casilla (fila 1, columna 1) a la casilla (fila 4, columna 3)?",
+      opciones: ["3", "5", "7"], correcta: 1,
+      explicacion: "Filas: |1 - 4| = 3. Columnas: |1 - 3| = 2. Total: 3 + 2 = 5 pasos." },
+    { t: "ia_revisa", pregunta: "La IA te dio este método. A veces devuelve números negativos. Toca la línea del error.",
+      lineas: ["int Distancia(int f1, int c1, int f2, int c2)", "{", "    int difFilas = Math.Abs(f1 - f2);", "    int difColumnas = c1 - c2;", "    return difFilas + difColumnas;", "}"],
+      mala: 3,
+      explicacion: "A difColumnas le falta Math.Abs. Con Distancia(0, 2, 0, 5) daría 2 - 5 = -3: ¡una distancia negativa!",
+      regla: "Prueba el código de la IA con varios ejemplos, también con los «raros». Ahí se esconden los errores." },
+    { t: "codigo", titulo: "Activa el radar",
+      enunciado: "Completa <code class=\"in\">Distancia</code>. Cuando funcione, en el marcador del juego aparecerá el <b>📏 radar</b>.",
+      inicial:
+`// Devuelve: cuántos pasos hay de (fila1, columna1) a (fila2, columna2)
+//   distancia = |fila1 - fila2| + |columna1 - columna2|
+// Math.Abs(x) quita el signo menos.
+
+int Distancia(int fila1, int columna1, int fila2, int columna2)
+{
+    int difFilas = Math.Abs(fila1 - fila2);
+    // ✏️ calcula difColumnas y devuelve la suma
+
+    return 0;
+}
+`,
+      solucion:
+`int Distancia(int fila1, int columna1, int fila2, int columna2)
+{
+    int difFilas = Math.Abs(fila1 - fila2);
+    int difColumnas = Math.Abs(columna1 - columna2);
+    return difFilas + difColumnas;
+}
+`,
+      pistas: ["Copia la línea de difFilas y cámbiala para columnas.",
+               "Al final: return difFilas + difColumnas;"],
+      test: function (f, h) {
+        return [
+          h.caso("Distancia(0, 0, 3, 4)", f.Distancia(0, 0, 3, 4), 7),
+          h.caso("Distancia(5, 5, 2, 1)", f.Distancia(5, 5, 2, 1), 7),
+          h.caso("Distancia(2, 2, 2, 2)", f.Distancia(2, 2, 2, 2), 0),
+          h.caso("Distancia(0, 2, 0, 5)", f.Distancia(0, 2, 0, 5), 3)
+        ];
+      } }
+  ]
+},
+// ======================================================================= 9
+{
+  icono: "🎯", titulo: "Buscar el mejor", pieza: "Fantasmas que persiguen",
+  funciones: ["IndiceDelMenor"],
+  ejercicios: [
+    { t: "teoria", titulo: "Encontrar el más chico",
+      html: `<p>Imagina que en el súper buscas la caja con <b>la fila más corta</b>. Miras las cajas una por una y <b>recuerdas la mejor que has visto hasta ahora</b>. Si encuentras una mejor, cambias. Al final, la que recuerdas es la mejor de todas.</p>
+<pre class="codigo">int[] filas = { 7, 3, 9 };
+<span class="com">// posición:    0  1  2</span>
+<span class="com">// la más corta es 3, que está en la posición 1</span></pre>
+<div class="ejemplo">Los fantasmas rojo y cian van a probar sus caminos posibles, medir con tu método <code class="in">Distancia</code> qué tan cerca quedan de ti… y elegir el <b>más corto</b>.</div>` },
+    { t: "opcion", pregunta: "En el arreglo { 8, 2, 5 }, ¿en qué POSICIÓN está el número más chico?",
+      opciones: ["0", "1", "2"], correcta: 1, codigoOpciones: true,
+      explicacion: "El más chico es 2, y está en la posición 1 (recuerda: se empieza a contar en 0)." },
+    { t: "ordenar", pregunta: "Ordena los pasos del algoritmo para encontrar el más chico",
+      lineas: ["int mejor = 0;  (por ahora, el primero es el mejor)", "Para cada posición i del arreglo…", "…si numeros[i] es MENOR que numeros[mejor]…", "…entonces mejor = i;", "Al terminar: return mejor;"],
+      explicacion: "Empiezas suponiendo que el primero es el mejor, revisas todos, cambias cuando encuentras uno menor y al final devuelves la posición." },
+    { t: "ia_elige", pregunta: "Pediste ayuda y la IA te respondió: return Array.IndexOf(numeros, numeros.Min()); Funciona, pero no entiendes nada. ¿Qué le respondes?",
+      opciones: [
+        { txt: "Nada, lo copio. Si funciona, funciona.", ok: false, por: "Si no lo entiendes, no podrás arreglarlo cuando falle ni explicarlo en clase. Y no aprendiste nada." },
+        { txt: "Gracias, pero soy principiante en C# y solo sé usar for, if y variables. ¿Me explicas la idea paso a paso para hacerlo con un ciclo for, sin darme el código final?", ok: true, por: "¡Perfecto! Le dices tu nivel y le pides que se adapte. Conversar e iterar con la IA es como mejor se aprende." },
+        { txt: "Eso está mal, hazlo otra vez.", ok: false, por: "No está mal: funciona (usa LINQ). El problema es que no se adapta a tu nivel, y la IA no lo sabe si no se lo dices." }
+      ],
+      regla: "Si la respuesta no es para tu nivel, díselo y pídele que te lo explique con lo que ya sabes." },
+    { t: "codigo", titulo: "¡Que te persigan!",
+      enunciado: "Completa <code class=\"in\">IndiceDelMenor</code>: devuelve la <b>posición</b> del número más chico del arreglo. Con esto, los fantasmas rojo y cian te van a perseguir.",
+      inicial:
+`// numeros es un arreglo de int, por ejemplo { 7, 3, 9 }
+// Devuelve: la POSICIÓN del número más chico.
+// Para { 7, 3, 9 } devuelve 1, porque numeros[1] es 3.
+
+int IndiceDelMenor(int[] numeros)
+{
+    int mejor = 0; // por ahora, el mejor es el primero
+
+    // ✏️ recorre el arreglo con un for
+    //    si numeros[i] es menor que numeros[mejor], guarda i en mejor
+
+    return mejor;
+}
+`,
+      solucion:
+`int IndiceDelMenor(int[] numeros)
+{
+    int mejor = 0;
+    for (int i = 1; i < numeros.Length; i++)
+    {
+        if (numeros[i] < numeros[mejor])
+        {
+            mejor = i;
+        }
+    }
+    return mejor;
+}
+`,
+      pistas: ["El for es como en la lección de ciclos: for (int i = 0; i < numeros.Length; i++) { ... }",
+               "Adentro: if (numeros[i] < numeros[mejor]) { mejor = i; }"],
+      test: function (f, h) {
+        const casos = [[7, 3, 9], [2, 8, 5], [9, 9, 1], [4], [6, 2, 8, 2, 5]];
+        return casos.map(function (a) {
+          const r = f.IndiceDelMenor(a.slice());
+          const min = Math.min.apply(null, a);
+          const ok = Number.isInteger(r) && a[r] === min;
+          return { ok: ok, msg: "IndiceDelMenor({ " + a.join(", ") + " })  →  " + (ok ? r : "esperaba " + a.indexOf(min) + ", tu código dio " + h.mostrar(r)) };
+        });
+      } }
+  ]
+}
+];
+
+/* =========================================================================
+   DE C# A JAVASCRIPT
+   El navegador no ejecuta C#. Este traductor entiende el C# del curso
+   (variables, if, for, while, foreach, métodos, arreglos, char[,], Random,
+   Math, Console.WriteLine), revisa errores típicos de C# y lo convierte a
+   JavaScript sin cambiar los números de línea.
+   ========================================================================= */
+const TIPOS = "int|bool|string|char|double|float|long|var|Random|String";
+
+function separarLiterales(src) {
+  // Cambia textos, chars y comentarios por marcadores para que las reglas
+  // solo toquen código. Conserva los saltos de línea.
+  const lits = [];
+  let out = "", i = 0;
+  const n = src.length;
+  function guardar(tipo, texto) {
+    lits.push({ tipo: tipo, texto: texto });
+    const saltos = (texto.match(/\n/g) || []).length;
+    return "\u0001" + tipo + (lits.length - 1) + "\u0001" + "\n".repeat(saltos);
+  }
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (c === "/" && d === "/") { let j = src.indexOf("\n", i); if (j < 0) j = n; out += guardar("K", src.slice(i, j)); i = j; continue; }
+    if (c === "/" && d === "*") { let j = src.indexOf("*/", i + 2); j = j < 0 ? n : j + 2; out += guardar("K", src.slice(i, j)); i = j; continue; }
+    if (c === "@" && d === '"') { let j = i + 2; while (j < n && !(src[j] === '"' && src[j + 1] !== '"')) { if (src[j] === '"') j++; j++; } out += guardar("V", src.slice(i, j + 1)); i = j + 1; continue; }
+    if ((c === "$" && d === '"') || c === '"') {
+      let j = i + (c === "$" ? 2 : 1), sinCerrar = false;
+      while (j < n && src[j] !== '"') { if (src[j] === "\\") j++; if (src[j] === "\n") { sinCerrar = true; break; } j++; }
+      if (j >= n) sinCerrar = true;
+      if (sinCerrar) return { error: { linea: src.slice(0, i).split("\n").length, msg: "Abriste unas comillas \" y no las cerraste." } };
+      out += guardar(c === "$" ? "I" : "S", src.slice(i, j + 1)); i = j + 1; continue;
+    }
+    if (c === "'") {
+      let j = i + 1;
+      while (j < n && src[j] !== "'" && src[j] !== "\n") { if (src[j] === "\\") j++; j++; }
+      if (j >= n || src[j] !== "'") return { error: { linea: src.slice(0, i).split("\n").length, msg: "Abriste una comilla simple ' y no la cerraste." } };
+      out += guardar("C", src.slice(i, j + 1)); i = j + 1; continue;
+    }
+    out += c; i++;
+  }
+  return { codigo: out, lits: lits };
+}
+
+function revisarCSharp(cod, lits) {
+  // cod: código con marcadores. Devuelve {linea, msg} o null.
+  const lineas = cod.split("\n");
+  const M = "\u0001";
+  const err = function (k, msg) { return { linea: k + 1, msg: msg }; };
+  // char con más de una letra
+  for (let k = 0; k < lits.length; k++) {
+    const L = lits[k];
+    if (L.tipo === "C") {
+      const dentro = L.texto.slice(1, -1);
+      const largo = dentro.startsWith("\\") ? 1 : dentro.length;
+      if (largo !== 1) {
+        const ln = cod.split(M + "C" + k + M)[0].split("\n").length;
+        return { linea: ln, msg: (largo === 0 ? "Un char no puede estar vacío: ''. " : "Las comillas simples son para UNA sola letra (char): " + L.texto + " tiene " + largo + ". ") + "Si es un texto, usa comillas dobles: \"" + dentro + "\". (error CS1012)" };
+      }
+    }
+  }
+  // tipos de variables y parámetros
+  const tipos = {};
+  const reDecl = new RegExp("\\b(" + TIPOS + ")(\\[\\s*,?\\s*\\])?\\s+([A-Za-z_]\\w*)\\b", "g");
+  let m;
+  while ((m = reDecl.exec(cod))) tipos[m[3]] = m[1] + (m[2] ? "[]" : "");
+  let metodo = null, profundidad = 0, inicioMetodo = 0, tieneReturn = false;
+  const reMetodo = new RegExp("^\\s*(?:(?:public|private|static)\\s+)*(void|" + TIPOS + ")(\\[\\s*,?\\s*\\])?\\s+([A-Za-z_]\\w*)\\s*\\(([^)]*)\\)\\s*\\{?\\s*$");
+  for (let k = 0; k < lineas.length; k++) {
+    const lin = lineas[k].replace(new RegExp(M + "K\\d+" + M, "g"), "");
+    const t = lin.trim();
+    if (!t) continue;
+    // cosas de JavaScript
+    if (/\blet\s+\w/.test(t)) return err(k, "En C# no existe «let». Pon el tipo de la variable: int, string, char o bool. Ejemplo: int contador = 0;");
+    if (/\bfunction\b/.test(t)) return err(k, "En C# no se escribe «function». Un método empieza con el tipo que devuelve. Ejemplo: int Doble(int numero)");
+    if (/===|!==/.test(t)) return err(k, "En C# se compara con == (dos iguales), no con ===.");
+    if (/\bconsole\.log\b/i.test(t)) return err(k, "En C# se escribe Console.WriteLine(...), con C y W mayúsculas.");
+    if (/\.length\b/.test(t)) return err(k, "En C# se escribe .Length, con L mayúscula.");
+    if (/\bMath\.(abs|min|max|floor|round|sqrt|pow)\b/.test(t)) return err(k, "En C# los métodos de Math empiezan con mayúscula: Math.Abs, Math.Min, Math.Max…");
+    if (/\b(True|False)\b/.test(t)) return err(k, "En C# true y false se escriben en minúsculas.");
+    if (/^(If|For|While|Return|Else|Int|String|Bool)\b/.test(t)) return err(k, "En C# las palabras clave van en minúsculas: if, for, while, return, else, int, bool…");
+    if (/\bgetlength\b|\.getLength\b|\.Getlength\b/.test(t)) return err(k, "Se escribe GetLength, con G y L mayúsculas.");
+    // = dentro de if/while
+    const cond = t.match(/^(?:else\s+)?(?:if|while)\s*\((.*)\)\s*\{?$/);
+    if (cond && /(^|[^=!<>])=($|[^=])/.test(cond[1])) return err(k, "Dentro del " + (/while/.test(t) ? "while" : "if") + " se compara con == (dos iguales). Un solo = guarda un valor. (error CS0029)");
+    // comparar char con string o string con char
+    for (const nom in tipos) {
+      const re1 = new RegExp("\\b" + nom + "\\s*[=!]=\\s*" + M + "([SC])\\d+" + M + "|" + M + "([SC])\\d+" + M + "\\s*[=!]=\\s*" + nom + "\\b");
+      const mm = t.match(re1);
+      if (mm) {
+        const lit = mm[1] || mm[2];
+        if (tipos[nom] === "char" && lit === "S") return err(k, "«" + nom + "» es un char (una letra), pero lo comparas con un texto entre comillas dobles. Usa comillas simples: '.' en lugar de \".\". (error CS0019)");
+        if (tipos[nom] === "string" && lit === "C") return err(k, "«" + nom + "» es un string (texto), pero lo comparas con un char entre comillas simples. Usa comillas dobles: \"arriba\". (error CS0019)");
+      }
+    }
+    // inicio de método
+    const mh = metodo ? null : lin.match(reMetodo);
+    if (mh && !/^\s*(return|new)\b/.test(lin)) { metodo = { tipo: mh[1] + (mh[2] ? "[]" : ""), nombre: mh[3] }; profundidad = 0; inicioMetodo = k; tieneReturn = false; }
+    // return con tipo equivocado
+    if (metodo && /^return\b/.test(t)) {
+      tieneReturn = true;
+      const r = t.replace(/^return\s*/, "").replace(/;\s*$/, "").trim();
+      const ty = metodo.tipo;
+      const esS = new RegExp("^" + M + "S\\d+" + M + "$").test(r), esC = new RegExp("^" + M + "C\\d+" + M + "$").test(r);
+      const esBool = /^(true|false)$/.test(r), esNum = /^-?\d+$/.test(r);
+      if (ty === "void" && r) return err(k, "El método " + metodo.nombre + " es void (no devuelve nada), pero tiene un return con valor.");
+      if (ty === "int" && (esS || esC || esBool)) return err(k, "El método " + metodo.nombre + " devuelve int (un número), pero aquí devuelves " + (esS ? "un texto" : esC ? "un char" : "un bool") + ". " + (esS ? "Quita las comillas." : ""));
+      if (ty === "bool" && (esS || esC || esNum)) return err(k, "El método " + metodo.nombre + " devuelve bool: escribe true o false, sin comillas.");
+      if (ty === "string" && (esC || esNum || esBool)) return err(k, "El método " + metodo.nombre + " devuelve string: el texto va entre comillas dobles \"...\"" + (esC ? " (las simples son para char)." : "."));
+      if (ty === "char" && (esS || esNum || esBool)) return err(k, "El método " + metodo.nombre + " devuelve char: una letra entre comillas simples, como '#'.");
+    }
+    // punto y coma
+    const sinMarcas = t;
+    const esEstructura = /^(if|else|for|foreach|while|switch|case|default|do|try|catch|finally)\b/.test(sinMarcas) || /^[{}]+;?$/.test(sinMarcas) || reMetodo.test(lin) || /[{}]\s*$/.test(sinMarcas) || /,\s*$/.test(sinMarcas) || /^[{]/.test(sinMarcas);
+    const sigue = (lineas.slice(k + 1).find(function (x) { return x.replace(new RegExp(M + "K\\d+" + M, "g"), "").trim(); }) || "").trim();
+    if (!esEstructura && !/;\s*$/.test(sinMarcas) && !/^[.+\-*/&|?:]/.test(sigue)) return err(k, "Falta el punto y coma ; al final de esta línea. En C# cada instrucción termina con ;  (error CS1002)");
+    // llaves para saber dónde termina el método
+    if (metodo) {
+      for (const ch of lin) { if (ch === "{") profundidad++; else if (ch === "}") profundidad--; }
+      if (profundidad <= 0 && /\}/.test(lin) && k > inicioMetodo) {
+        if (metodo.tipo !== "void" && !tieneReturn) return err(inicioMetodo, "El método " + metodo.nombre + " debe devolver un " + metodo.tipo + ", pero no tiene ningún return. (error CS0161)");
+        metodo = null;
+      }
+    }
+  }
+  return null;
+}
+
+function aJavaScript(cod, lits) {
+  let s = cod;
+  // arreglo con valores: int[] a = { 1, 2 };  →  [1, 2]
+  s = s.replace(/(\[\s*,?\s*\]\s+[A-Za-z_]\w*\s*=\s*)\{([^{}]*)\}/g, "$1[$2]");
+  s = s.replace(/new\s+\w+\s*\[\s*\]\s*\{([^{}]*)\}/g, "[$1]");
+  // métodos
+  const reMet = new RegExp("^(\\s*)(?:(?:public|private|static)\\s+)*(?:void|" + TIPOS + ")(?:\\[\\s*,?\\s*\\])?\\s+([A-Za-z_]\\w*)\\s*\\(([^)]*)\\)", "gm");
+  s = s.replace(reMet, function (todo, esp, nombre, params) {
+    if (/^(return|new|if|while|for|else)$/.test(nombre)) return todo;
+    const nombres = [];
+    const reP = new RegExp("(?:" + TIPOS + ")(?:\\[\\s*,?\\s*\\])?\\s+([A-Za-z_]\\w*)", "g");
+    let m; while ((m = reP.exec(params))) nombres.push(m[1]);
+    return esp + "function " + nombre + "(" + nombres.join(", ") + ")";
+  });
+  // foreach
+  s = s.replace(new RegExp("\\bforeach\\s*\\(\\s*(?:" + TIPOS + ")(?:\\[\\s*,?\\s*\\])?\\s+([A-Za-z_]\\w*)\\s+in\\s+", "g"), "for (let $1 of ");
+  // const int X = ...  y declaraciones
+  s = s.replace(new RegExp("\\bconst\\s+(?:" + TIPOS + ")\\s+", "g"), "const ");
+  s = s.replace(new RegExp("\\b(?:" + TIPOS + ")(?:\\[\\s*,?\\s*\\])?\\s+([A-Za-z_]\\w*)(?=\\s*(=|;|,|\\)))", "g"), "let $1");
+  // new
+  s = s.replace(/\bnew\s+Random\s*\(\s*\)/g, "__nuevoRandom()");
+  s = s.replace(/\bnew\s+(int|double|long|float)\s*\[([^\],]+)\]/g, "new Array($2).fill(0)");
+  s = s.replace(/\bnew\s+bool\s*\[([^\],]+)\]/g, "new Array($1).fill(false)");
+  s = s.replace(/\bnew\s+(string|String)\s*\[([^\],]+)\]/g, "new Array($2).fill(null)");
+  // propiedades y métodos de C#
+  s = s.replace(/([A-Za-z_]\w*)\.GetLength\(\s*1\s*\)/g, "$1[0].length");
+  s = s.replace(/\.GetLength\(\s*0\s*\)/g, ".length");
+  s = s.replace(/\.Length\b/g, ".length");
+  s = s.replace(/\bMath\.(Abs|Min|Max|Floor|Round|Sqrt|Pow)\b/g, function (_, f) { return "Math." + f.toLowerCase(); });
+  s = s.replace(/\bMath\.Ceiling\b/g, "Math.ceil");
+  s = s.replace(/\bConsole\.Write(Line)?\s*\(/g, "console.log(");
+  s = s.replace(/\.ToString\(\s*\)/g, ".toString()");
+  s = s.replace(/\.ToUpper\(\s*\)/g, ".toUpperCase()").replace(/\.ToLower\(\s*\)/g, ".toLowerCase()");
+  s = s.replace(/\((int|long)\)\s*([A-Za-z_][\w.]*(?:\([^()]*\))?)/g, "Math.trunc($2)");
+  // comparaciones estrictas
+  s = s.replace(/([^=!<>])==(?!=)/g, "$1===").replace(/!=(?!=)/g, "!==");
+  // índices de matriz: a[f, c] → a[f][c]
+  let r = "", i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === "[" && i > 0 && /[\w\])]/.test(s[i - 1])) {
+      let prof = 0, j = i, partes = [], ini = i + 1;
+      for (; j < s.length; j++) {
+        if (s[j] === "[" || s[j] === "(") prof++;
+        else if (s[j] === "]" || s[j] === ")") { prof--; if (prof === 0) break; }
+        else if (s[j] === "," && prof === 1) { partes.push(s.slice(ini, j)); ini = j + 1; }
+      }
+      partes.push(s.slice(ini, j));
+      if (partes.length > 1) { r += partes.map(function (p) { return "[" + p.trim() + "]"; }).join(""); i = j + 1; continue; }
+    }
+    r += ch; i++;
+  }
+  s = r;
+  // regresar textos y comentarios
+  s = s.replace(/\u0001([SCKIV])(\d+)\u0001/g, function (_, tipo, k) {
+    const t = lits[+k].texto;
+    if (tipo === "K" || tipo === "S" || tipo === "C") return t;
+    if (tipo === "V") return JSON.stringify(t.slice(2, -1).replace(/""/g, '"'));
+    return "`" + t.slice(2, -1).replace(/`/g, "\\`").replace(/\{([^{}]+)\}/g, function (_, e) { return "${" + e.replace(/\.Length\b/g, ".length").replace(/([A-Za-z_]\w*)\.GetLength\(\s*1\s*\)/g, "$1[0].length").replace(/\.GetLength\(\s*0\s*\)/g, ".length").replace(/\bMath\.(Abs|Min|Max|Floor|Round|Sqrt|Pow)\b/g, function (_, f) { return "Math." + f.toLowerCase(); }) + "}"; }) + "`";
+  });
+  return s;
+}
+
+function traducirCSharp(src) {
+  const sep = separarLiterales(src);
+  if (sep.error) return { error: sep.error };
+  const e = revisarCSharp(sep.codigo, sep.lits);
+  if (e) return { error: e };
+  return { js: aJavaScript(sep.codigo, sep.lits) };
+}
+
+/* ------------------------- utilidades de código ------------------------- */
+
+// Inserta un "guardia" al inicio de cada ciclo for/while para detectar
+// ciclos infinitos. No agrega saltos de línea (los números de línea no cambian).
+const GUARDIA = 'if(++__G.n>300000)throw new Error("CICLO_INFINITO");';
+function instrumentar(src) {
+  let out = "", i = 0;
+  const n = src.length;
+  let sinLlaves = false;
+  while (i < n) {
+    const ch = src[i];
+    if (ch === "/" && src[i + 1] === "/") { const j = src.indexOf("\n", i); const e = j < 0 ? n : j; out += src.slice(i, e); i = e; continue; }
+    if (ch === "/" && src[i + 1] === "*") { const j = src.indexOf("*/", i + 2); const e = j < 0 ? n : j + 2; out += src.slice(i, e); i = e; continue; }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      let j = i + 1;
+      while (j < n && src[j] !== ch) { if (src[j] === "\\") j++; if (src[j] === "\n" && ch !== "`") break; j++; }
+      out += src.slice(i, j + 1); i = j + 1; continue;
+    }
+    if (/[A-Za-z_$]/.test(ch)) {
+      let j = i;
+      while (j < n && /[\w$]/.test(src[j])) j++;
+      const w = src.slice(i, j);
+      const antes = i > 0 ? src[i - 1] : "";
+      out += w; i = j;
+      if ((w === "for" || w === "while") && !/[\w$.]/.test(antes)) {
+        let k = i;
+        while (k < n && /\s/.test(src[k])) k++;
+        if (src[k] === "(") {
+          let depth = 0, m = k;
+          for (; m < n; m++) {
+            const c = src[m];
+            if (c === "(") depth++;
+            else if (c === ")") { depth--; if (depth === 0) break; }
+            else if (c === '"' || c === "'" || c === "`") { const q = c; m++; while (m < n && src[m] !== q) { if (src[m] === "\\") m++; m++; } }
+          }
+          if (m < n) {
+            let p = m + 1;
+            while (p < n && /\s/.test(src[p])) p++;
+            if (src[p] === "{") { out += src.slice(i, p + 1) + GUARDIA; i = p + 1; }
+            else if (src[p] !== ";") { sinLlaves = true; }
+          }
+        }
+      }
+      continue;
+    }
+    out += ch; i++;
+  }
+  return { codigo: out, sinLlaves: sinLlaves };
+}
+
+// Traduce el C# del alumno y arma el cuerpo de la función que lo ejecuta.
+function construirCuerpo(u, codigo) {
+  const un = UNIDADES[u];
+  const tr = traducirCSharp(codigo);
+  if (tr.error) return { errorCSharp: tr.error };
+  const ins = instrumentar(tr.js);
+  const ret = un.funciones.map(function (nm) { return nm + ": (typeof " + nm + " !== 'undefined' ? " + nm + " : undefined)"; }).join(", ");
+  return { cuerpo: '"use strict";' + ins.codigo + "\n;return {" + ret + "};\n//# sourceURL=leccion" + u + ".js", sinLlaves: ins.sinLlaves };
+}
+const PARAMS_ALUMNO = ["console", "__G", "azar", "__nuevoRandom"];
+
+// Revisa paréntesis y llaves para decir en qué línea está el problema.
+function revisarBalance(src) {
+  const pila = [];
+  const pares = { ")": "(", "}": "{", "]": "[" };
+  let linea = 1;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === "\n") { linea++; continue; }
+    if (c === "/" && src[i + 1] === "/") { while (i < src.length && src[i] !== "\n") i++; i--; continue; }
+    if (c === "/" && src[i + 1] === "*") { const j = src.indexOf("*/", i + 2); const fin = j < 0 ? src.length : j + 1; for (let k = i; k < fin; k++) if (src[k] === "\n") linea++; i = fin; continue; }
+    if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== c) { if (src[j] === "\\") j++; if (src[j] === "\n" && c !== "`") return { linea: linea, msg: "Abriste una comilla " + c + " y no la cerraste." }; j++; }
+      if (j >= src.length) return { linea: linea, msg: "Abriste una comilla " + c + " y no la cerraste." };
+      i = j; continue;
+    }
+    if (c === "(" || c === "{" || c === "[") pila.push({ c: c, linea: linea });
+    else if (c === ")" || c === "}" || c === "]") {
+      const top = pila.pop();
+      if (!top) return { linea: linea, msg: "Sobra un " + c + " (no hay nada abierto que cerrar)." };
+      if (top.c !== pares[c]) return { linea: linea, msg: "Aquí cierras con " + c + " pero lo último que abriste fue " + top.c + " (en la línea " + top.linea + ")." };
+    }
+  }
+  if (pila.length) { const t = pila[pila.length - 1]; const cierre = { "(": ")", "{": "}", "[": "]" }[t.c]; return { linea: t.linea, msg: "Abriste un " + t.c + " y nunca lo cerraste con " + cierre + "." }; }
+  return null;
+}
+
+// Traduce mensajes de error a algo entendible.
+function traducirError(msg) {
+  msg = String(msg || "");
+  let m;
+  if (/CICLO_INFINITO/.test(msg)) return "Tu ciclo parece no terminar nunca (ciclo infinito). Revisa que la condición del for/while en algún momento sea falsa.";
+  if (/Unexpected end of input/.test(msg)) return "Falta cerrar algo: revisa que cada { tenga su } y cada ( su ).";
+  if ((m = msg.match(/Unexpected token '?([^']+?)'?$/))) return "Hay un «" + m[1] + "» donde no se esperaba. Casi siempre el error está justo antes: ¿falta cerrar un paréntesis, una llave o un ;?";
+  if (/missing \) after/.test(msg)) return "Falta cerrar un paréntesis «)».";
+  if (/Invalid or unexpected token/.test(msg)) return "Hay un símbolo raro o una comilla sin cerrar.";
+  if (/Unexpected identifier|Unexpected string|Unexpected number/.test(msg)) return "Hay una palabra o un valor en un lugar raro. ¿Te faltó un operador (=, +, ==), una coma, un ; o un paréntesis?";
+  if ((m = msg.match(/(\S+) is not defined/))) return "Usaste «" + m[1] + "» pero no existe. ¿Lo declaraste con su tipo (por ejemplo int " + m[1] + " = 0;)? ¿Escribiste bien mayúsculas y minúsculas? (error CS0103)";
+  if ((m = msg.match(/Identifier '(\S+)' has already been declared/))) return "Declaraste «" + m[1] + "» dos veces. El tipo (int, string…) solo se pone la primera vez. (error CS0128)";
+  if (/Assignment to constant/.test(msg)) return "Intentaste cambiar una constante (const).";
+  if (/Cannot read propert|undefined \(reading/.test(msg)) return "Te saliste del arreglo o de la tabla: usaste una posición que no existe. (IndexOutOfRangeException)";
+  if ((m = msg.match(/(\S+) is not a function/))) return "«" + m[1] + "» no es un método. ¿Lo escribiste bien?";
+  if (/Maximum call stack/.test(msg)) return "Tu método se llama a sí mismo sin parar. (StackOverflowException)";
+  return msg;
+}
+
+function normalizar(t) {
+  return String(t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+</script>
+
+<!-- ======================================================================
+     APLICACIÓN: juego, lecciones y pantalla.
+     ====================================================================== -->
+<script>
+"use strict";
+const $ = function (s, r) { return (r || document).querySelector(s); };
+const esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+const MODO_PROFE = new URLSearchParams(location.search).has("profe") || location.hash === "#profe";
+
+/* ============================ progreso ============================ */
+const CLAVE = "comepuntos-v1";
+let prog = { xp: 0, hechas: {}, codigos: {}, racha: 0, ultimoDia: "", sonido: true };
+try { const g = JSON.parse(localStorage.getItem(CLAVE)); if (g && typeof g === "object") prog = Object.assign(prog, g); } catch (e) { }
+function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(prog)); } catch (e) { } }
+function hoy(d) { d = d || new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+function desbloqueada(u) { return u === 0 || !!prog.hechas[u - 1]; }
+
+/* ============================ sonido ============================ */
+let audio = null;
+function sonar(tipo) {
+  if (!prog.sonido) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const notas = { bien: [660, 880], mal: [220, 160], fin: [523, 659, 784, 1047], comer: [900] }[tipo] || [440];
+    notas.forEach(function (fr, k) {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = tipo === "mal" ? "sawtooth" : "sine";
+      o.frequency.value = fr;
+      const t = audio.currentTime + k * (tipo === "comer" ? 0 : 0.11);
+      const dur = tipo === "comer" ? 0.05 : 0.14;
+      g.gain.setValueAtTime(tipo === "comer" ? 0.04 : 0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + dur);
+    });
+  } catch (e) { }
+}
+
+/* ===================== compilar y probar código ===================== */
+const G = { n: 0 };
+const AZAR = new Function(HELPERS_SRC + "; return crearAzar();")();
+const consolaMuda = { log: function () { }, error: function () { }, warn: function () { }, info: function () { } };
+
+function compilarPrincipal(u, codigo) {
+  const c = construirCuerpo(u, codigo);
+  if (c.errorCSharp || c.sinLlaves) throw new Error("NO_COMPILA");
+  const f = new Function(PARAMS_ALUMNO.join(","), c.cuerpo);
+  G.n = 0;
+  return f(consolaMuda, G, AZAR, function () { return AZAR; });
+}
+
+const WORKER_SRC = HELPERS_SRC + String.raw`
+let logs = [];
+function fmt(x){ try { return typeof x === "string" ? x : JSON.stringify(x); } catch(e){ return String(x); } }
+const consola = { log: function(){ if (logs.length < 40) logs.push(Array.prototype.map.call(arguments, fmt).join(" ")); } };
+consola.error = consola.log; consola.warn = consola.log; consola.info = consola.log;
+const __G = { n: 0 };
+onmessage = function (e) {
+  const d = e.data; logs = [];
+  let res = null, err = null;
+  try {
+    __G.n = 0;
+    const fab = new Function(d.params, d.cuerpo);
+    const fns = fab(consola, __G, crearAzar(), crearAzar);
+    const w = {};
+    for (const k in fns) {
+      if (d.tipo !== "vars" && typeof fns[k] !== "function") throw new Error("NO_FUNCION:" + k);
+      w[k] = typeof fns[k] === "function" ? (function (fn) { return function () { __G.n = 0; return fn.apply(null, arguments); }; })(fns[k]) : fns[k];
+    }
+    const test = (0, eval)("(" + d.test + ")");
+    res = test(w, { caso: caso, mostrar: mostrar, mapa: function () { return d.mapa.map(function (r) { return r.split(""); }); } });
+  } catch (ex) {
+    err = { message: String(ex && ex.message || ex), stack: String(ex && ex.stack || "") };
+  }
+  postMessage({ res: res, err: err, logs: logs });
+};`;
+
+let urlWorker = null;
+function probarEnWorker(datos) {
+  return new Promise(function (resolver) {
+    let w;
+    try {
+      urlWorker = urlWorker || URL.createObjectURL(new Blob([WORKER_SRC], { type: "text/javascript" }));
+      w = new Worker(urlWorker);
+    } catch (e) {
+      resolver(probarAqui(datos)); return;
+    }
+    const t = setTimeout(function () { w.terminate(); resolver({ timeout: true }); }, 1500);
+    w.onmessage = function (e) { clearTimeout(t); w.terminate(); resolver(e.data); };
+    w.onerror = function (e) { clearTimeout(t); w.terminate(); e.preventDefault(); resolver({ err: { message: e.message || "Error", stack: "" } }); };
+    w.postMessage(datos);
+  });
+}
+// Respaldo si el navegador no permite Workers (se ejecuta con el guardia de ciclos).
+function probarAqui(d) {
+  const logs = [];
+  const consola = { log: function () { if (logs.length < 40) logs.push(Array.prototype.join.call(arguments, " ")); } };
+  const H = new Function(HELPERS_SRC + "; return { caso: caso, mostrar: mostrar };")();
+  try {
+    const fns = new Function(d.params, d.cuerpo)(consola, G, AZAR, function () { return AZAR; });
+    const w = {};
+    for (const k in fns) {
+      if (d.tipo !== "vars" && typeof fns[k] !== "function") throw new Error("NO_FUNCION:" + k);
+      w[k] = typeof fns[k] === "function" ? (function (fn) { return function () { G.n = 0; return fn.apply(null, arguments); }; })(fns[k]) : fns[k];
+    }
+    const test = (0, eval)("(" + d.test + ")");
+    return { res: test(w, { caso: H.caso, mostrar: H.mostrar, mapa: function () { return d.mapa.map(function (r) { return r.split(""); }); } }), logs: logs };
+  } catch (ex) { return { err: { message: String(ex.message || ex), stack: String(ex.stack || "") }, logs: logs }; }
+}
+
+function lineaDeError(stack, u) {
+  const m = String(stack).match(new RegExp("leccion" + u + "\\.js:(\\d+)"));
+  return m ? Math.max(1, parseInt(m[1], 10) - 2) : null;
+}
+
+// Revisa el código de una lección. Devuelve {ok, pruebas, error, logs, instalable}
+async function revisarCodigo(u, codigo, ej) {
+  const un = UNIDADES[u];
+  const c = construirCuerpo(u, codigo);
+  if (c.errorCSharp) return { error: "Línea " + c.errorCSharp.linea + ": " + c.errorCSharp.msg };
+  if (c.sinLlaves) return { error: "Escribe tus ciclos con llaves { }. Por ejemplo: for (...) { ... }" };
+  try { new Function(PARAMS_ALUMNO.join(","), c.cuerpo); }
+  catch (ex) {
+    const b = revisarBalance(codigo);
+    return { error: (b ? "Línea " + b.linea + ": " + b.msg : traducirError(ex.message)), errorOriginal: ex.message };
+  }
+  const r = await probarEnWorker({ params: PARAMS_ALUMNO.join(","), cuerpo: c.cuerpo, test: ej.test.toString(), tipo: un.tipo || "fn", mapa: MAPA_TEXTO });
+  if (r.timeout) return { error: "Tu código tarda demasiado. ¿Tienes un ciclo que nunca termina?", logs: [] };
+  if (r.err) {
+    let msg = r.err.message;
+    if (/^NO_FUNCION:/.test(msg)) return { error: "No encuentro «" + msg.split(":")[1] + "». ¿Le cambiaste el nombre o lo borraste?", logs: r.logs };
+    const ln = lineaDeError(r.err.stack, u);
+    return { error: (ln ? "Línea " + ln + ": " : "") + traducirError(msg), errorOriginal: msg, logs: r.logs, instalable: true };
+  }
+  const pruebas = r.res || [];
+  return { ok: pruebas.length > 0 && pruebas.every(function (p) { return p.ok; }), pruebas: pruebas, logs: r.logs, instalable: true };
+}
+
+/* ============================ el juego ============================ */
+const lienzo = $("#lienzo"), ctx = lienzo.getContext("2d");
+const TAM = 24, FILAS = MAPA_TEXTO.length, COLS = MAPA_TEXTO[0].length;
+const FANTASMAS_INICIO = [
+  { f: 9, c: 8, color: "#ff4d5e", persigue: true },
+  { f: 9, c: 9, color: "#ff8fe0", persigue: false },
+  { f: 9, c: 10, color: "#3fdcf0", persigue: true },
+  { f: 7, c: 9, color: "#ffab40", persigue: false }
+];
+let piezas = {};     // nombre de función -> función del alumno instalada
+let config = { velocidad: 5, vidasIniciales: 3, colorJugador: COLORES_CONSOLA.yellow };
+let juego = null;
+let activo = false;
+let ultimoAviso = "";
+
+function colorConsola(x) { if (typeof x !== "string") return null; const c = COLORES_CONSOLA[x.toLowerCase()]; return c && c !== "#000000" ? c : null; }
+function instalarVars(v) {
+  const c = { velocidad: 5, vidasIniciales: 3, colorJugador: COLORES_CONSOLA.yellow };
+  if (v) {
+    if (Number.isInteger(v.velocidad)) c.velocidad = Math.min(15, Math.max(1, v.velocidad));
+    if (Number.isInteger(v.vidasIniciales)) c.vidasIniciales = Math.min(9, Math.max(1, v.vidasIniciales));
+    if (colorConsola(v.colorJugador)) c.colorJugador = colorConsola(v.colorJugador);
+  }
+  const cambiaronVidas = c.vidasIniciales !== config.vidasIniciales;
+  config = c;
+  if (cambiaronVidas && juego) reiniciarJuego();
+}
+// Instala en el juego el código de todas las lecciones terminadas.
+function instalarDesdeProgreso() {
+  piezas = {};
+  let vars = null;
+  UNIDADES.forEach(function (un, u) {
+    if (!prog.hechas[u] || !prog.codigos[u]) return;
+    try {
+      const r = compilarPrincipal(u, prog.codigos[u]);
+      if (un.tipo === "vars") vars = r;
+      else un.funciones.forEach(function (nm) { if (typeof r[nm] === "function") piezas[nm] = r[nm]; });
+    } catch (e) { }
+  });
+  instalarVars(vars);
+  pintarPiezas();
+}
+// Instala (en vivo) el código que el alumno está escribiendo.
+function instalarVivo(u, codigo) {
+  const un = UNIDADES[u];
+  try {
+    const r = compilarPrincipal(u, codigo);
+    if (un.tipo === "vars") instalarVars(r);
+    else un.funciones.forEach(function (nm) { if (typeof r[nm] === "function") piezas[nm] = r[nm]; else delete piezas[nm]; });
+    pintarPiezas(u);
+  } catch (e) { }
+}
+
+const NADA = {};
+function llamar(nombre) {
+  const f = piezas[nombre];
+  if (typeof f !== "function") return NADA;
+  const args = Array.prototype.slice.call(arguments, 1);
+  G.n = 0;
+  try { return f.apply(null, args); }
+  catch (e) { avisar("⚠️ Error en " + nombre + ": " + traducirError(e.message)); return NADA; }
+}
+function tiene(nombre) { return typeof piezas[nombre] === "function"; }
+function avisar(t) {
+  if (t === ultimoAviso) return;
+  ultimoAviso = t;
+  const a = $("#avisoJuego");
+  a.textContent = t; a.style.display = t ? "block" : "none";
+}
+
+function reiniciarJuego() {
+  juego = {
+    mapa: MAPA_TEXTO.map(function (r) { return r.split(""); }),
+    j: { f: 15, c: 9, dir: null, deseada: null },
+    fantasmas: FANTASMAS_INICIO.map(function (g) { return Object.assign({}, g); }),
+    puntaje: 0, vidas: config.vidasIniciales, estado: "jugando", pausa: 0, tick: 0
+  };
+  avisar("");
+}
+function reiniciarPosiciones() {
+  juego.j.f = 15; juego.j.c = 9; juego.j.dir = null; juego.j.deseada = null;
+  juego.fantasmas.forEach(function (g, i) { g.f = FANTASMAS_INICIO[i].f; g.c = FANTASMAS_INICIO[i].c; });
+  juego.pausa = 10;
+}
+function dentro(f, c) { return f >= 0 && f < FILAS && c >= 0 && c < COLS; }
+function siguiente(f, c, dir) {
+  let nf = llamar("SiguienteFila", f, dir), nc = llamar("SiguienteColumna", c, dir);
+  if (!Number.isInteger(nf)) nf = f;
+  if (!Number.isInteger(nc)) nc = c;
+  if (nf === f && nc === c) return null;
+  if (!dentro(nf, nc)) return null;
+  if (llamar("EsPared", juego.mapa[nf][nc]) === true) return null;
+  return { f: nf, c: nc };
+}
+function quedan() {
+  const r = llamar("ContarPuntos", juego.mapa.map(function (fila) { return fila.slice(); }));
+  return Number.isInteger(r) && r >= 0 ? r : null;
+}
+function revisarChoque() {
+  if (!tiene("HayChoque")) return false;
+  for (let i = 0; i < juego.fantasmas.length; i++) {
+    const g = juego.fantasmas[i];
+    if (llamar("HayChoque", juego.j.f, juego.j.c, g.f, g.c) === true) {
+      juego.vidas--;
+      sonar("mal");
+      if (juego.vidas <= 0) { juego.vidas = 0; juego.estado = "perdio"; }
+      else reiniciarPosiciones();
+      return true;
+    }
+  }
+  return false;
+}
+function moverFantasmas() {
+  if (!tiene("DireccionAlAzar")) return;
+  juego.fantasmas.forEach(function (g) {
+    const opciones = [], destinos = {};
+    DIRECCIONES.forEach(function (d) { const p = siguiente(g.f, g.c, d); if (p) { opciones.push(d); destinos[d] = p; } });
+    if (!opciones.length) return;
+    let dir = null;
+    if (g.persigue && tiene("Distancia") && tiene("IndiceDelMenor") && Math.random() < 0.75) {
+      const dists = opciones.map(function (d) { const r = llamar("Distancia", destinos[d].f, destinos[d].c, juego.j.f, juego.j.c); return typeof r === "number" && isFinite(r) ? r : 999; });
+      const k = llamar("IndiceDelMenor", dists.slice());
+      if (Number.isInteger(k) && k >= 0 && k < opciones.length) dir = opciones[k];
+    }
+    if (!dir) { const r = llamar("DireccionAlAzar", opciones.slice()); if (opciones.indexOf(r) >= 0) dir = r; }
+    if (dir) { g.f = destinos[dir].f; g.c = destinos[dir].c; }
+  });
+}
+function paso() {
+  if (!juego || juego.estado !== "jugando" || !activo) return;
+  juego.tick++;
+  if (juego.pausa > 0) { juego.pausa--; return; }
+  const j = juego.j;
+  if (j.deseada && siguiente(j.f, j.c, j.deseada)) j.dir = j.deseada;
+  if (j.dir) { const p = siguiente(j.f, j.c, j.dir); if (p) { j.f = p.f; j.c = p.c; } }
+  const casilla = juego.mapa[j.f][j.c];
+  const pts = llamar("PuntosDeCasilla", casilla);
+  if (casilla !== " " && typeof pts === "number" && isFinite(pts) && pts > 0) { juego.puntaje += pts; juego.mapa[j.f][j.c] = " "; sonar("comer"); }
+  if (quedan() === 0) { juego.estado = "gano"; sonar("fin"); return; }
+  if (revisarChoque()) return;
+  if (juego.tick % 2 === 0) { moverFantasmas(); revisarChoque(); }
+}
+function bucle() {
+  paso();
+  setTimeout(bucle, 1000 / config.velocidad);
+}
+
+/* ---------- dibujo ---------- */
+function redondo(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function dibujar() {
+  const t = performance.now();
+  ctx.fillStyle = "#0c0b16"; ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+  ctx.strokeStyle = "rgba(255,255,255,0.035)"; ctx.lineWidth = 1;
+  for (let f = 0; f <= FILAS; f++) { ctx.beginPath(); ctx.moveTo(0, f * TAM + .5); ctx.lineTo(COLS * TAM, f * TAM + .5); ctx.stroke(); }
+  for (let c = 0; c <= COLS; c++) { ctx.beginPath(); ctx.moveTo(c * TAM + .5, 0); ctx.lineTo(c * TAM + .5, FILAS * TAM); ctx.stroke(); }
+  if (!juego) return;
+  const colores = {};
+  ["#", ".", "o", " "].forEach(function (ch) { colores[ch] = colorConsola(llamar("ColorDeCasilla", ch)); });
+  for (let f = 0; f < FILAS; f++) for (let c = 0; c < COLS; c++) {
+    const ch = juego.mapa[f][c], x = c * TAM, y = f * TAM, col = colores[ch];
+    if (!col) continue;
+    ctx.fillStyle = col;
+    if (ch === "#") { redondo(x + 2, y + 2, TAM - 4, TAM - 4, 5); ctx.fill(); }
+    else if (ch === ".") { ctx.beginPath(); ctx.arc(x + TAM / 2, y + TAM / 2, 3, 0, 7); ctx.fill(); }
+    else if (ch === "o") { ctx.beginPath(); ctx.arc(x + TAM / 2, y + TAM / 2, 5.5 + Math.sin(t / 180) * 1.5, 0, 7); ctx.fill(); }
+  }
+  // fantasmas
+  juego.fantasmas.forEach(function (g) {
+    const x = g.c * TAM + TAM / 2, y = g.f * TAM + TAM / 2, r = 9;
+    ctx.fillStyle = g.color;
+    ctx.beginPath(); ctx.arc(x, y - 1, r, Math.PI, 0); ctx.lineTo(x + r, y + r);
+    for (let k = 0; k < 3; k++) { const x1 = x + r - (k * 2 + 1) * (r / 3); ctx.lineTo(x1, y + r - 4 + ((Math.floor(t / 150) + k) % 2) * 2); ctx.lineTo(x + r - (k + 1) * (2 * r / 3), y + r); }
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.beginPath(); ctx.arc(x - 3.5, y - 2, 3, 0, 7); ctx.arc(x + 3.5, y - 2, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = "#1a1840";
+    ctx.beginPath(); ctx.arc(x - 3, y - 1.5, 1.5, 0, 7); ctx.arc(x + 4, y - 1.5, 1.5, 0, 7); ctx.fill();
+  });
+  // jugador: una carita
+  const j = juego.j, jx = j.c * TAM + TAM / 2, jy = j.f * TAM + TAM / 2;
+  const salto = j.dir && juego.estado === "jugando" && activo ? Math.abs(Math.sin(t / 90)) * 1.5 : 0;
+  ctx.fillStyle = config.colorJugador;
+  ctx.beginPath(); ctx.arc(jx, jy - salto, 10, 0, 7); ctx.fill();
+  let ox = 0, oy = 0;
+  if (j.dir === "arriba") oy = -2; else if (j.dir === "abajo") oy = 2; else if (j.dir === "izquierda") ox = -2; else if (j.dir === "derecha") ox = 2;
+  ctx.fillStyle = "#1a1840";
+  ctx.beginPath(); ctx.arc(jx - 3.5 + ox, jy - 2.5 + oy - salto, 1.8, 0, 7); ctx.arc(jx + 3.5 + ox, jy - 2.5 + oy - salto, 1.8, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#1a1840"; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(jx + ox, jy + 1.5 + oy - salto, 4, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  // capas
+  let texto = null, sub = null;
+  if (juego.estado === "gano") { texto = "¡GANASTE! 🎉"; sub = "Puntos: " + juego.puntaje + " · toca Reiniciar"; }
+  else if (juego.estado === "perdio") { texto = "GAME OVER"; sub = "Puntos: " + juego.puntaje + " · toca Reiniciar"; }
+  else if (juego.pausa > 0) { texto = "¡Prepárate!"; }
+  else if (!activo) { sub = "⏸  Presiona una flecha para jugar"; }
+  if (texto || sub) {
+    if (texto) { ctx.fillStyle = "rgba(12,11,22,.72)"; ctx.fillRect(0, 0, lienzo.width, lienzo.height); }
+    ctx.textAlign = "center"; ctx.fillStyle = "#fff";
+    if (texto) { ctx.font = "800 34px system-ui, sans-serif"; ctx.fillText(texto, lienzo.width / 2, lienzo.height / 2); }
+    if (sub) {
+      ctx.font = "600 15px system-ui, sans-serif";
+      const y = texto ? lienzo.height / 2 + 32 : lienzo.height - 16;
+      if (!texto) { ctx.fillStyle = "rgba(12,11,22,.8)"; ctx.fillRect(0, y - 20, lienzo.width, 28); ctx.fillStyle = "#fff"; }
+      ctx.fillText(sub, lienzo.width / 2, y);
+    }
+  }
+  // marcador
+  $("#hudPuntos").textContent = "Puntos: " + juego.puntaje;
+  $("#hudVidas").textContent = "Vidas: " + (juego.vidas > 0 ? "❤".repeat(juego.vidas) : "—");
+  const q = quedan();
+  $("#hudQuedan").textContent = "Quedan: " + (q === null ? "?" : q);
+  const radar = $("#hudRadar");
+  if (tiene("Distancia")) {
+    let min = null;
+    juego.fantasmas.forEach(function (g) { const d = llamar("Distancia", j.f, j.c, g.f, g.c); if (typeof d === "number" && isFinite(d) && (min === null || d < min)) min = d; });
+    radar.classList.remove("oculto");
+    radar.textContent = "📏 Fantasma a " + (min === null ? "?" : min) + " pasos";
+  } else radar.classList.add("oculto");
+}
+function animar() { dibujar(); requestAnimationFrame(animar); }
+
+function pintarPiezas(enCurso) {
+  $("#piezas").innerHTML = UNIDADES.map(function (un, u) {
+    const si = !!prog.hechas[u];
+    return '<div class="pieza ' + (si ? "si" : "no") + '">' + (si ? "✅" : "🔧") + " " + esc(un.pieza) + "</div>";
+  }).join("");
+}
+
+function presionar(dir) {
+  if (!juego) return;
+  juego.j.deseada = dir;
+  activo = true;
+}
+document.addEventListener("keydown", function (e) {
+  const tag = (e.target && e.target.tagName) || "";
+  if (tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return;
+  const mapa = { ArrowUp: "arriba", ArrowDown: "abajo", ArrowLeft: "izquierda", ArrowRight: "derecha", w: "arriba", s: "abajo", a: "izquierda", d: "derecha", W: "arriba", S: "abajo", A: "izquierda", D: "derecha" };
+  if (mapa[e.key]) { e.preventDefault(); presionar(mapa[e.key]); }
+});
+document.querySelectorAll(".dpad button").forEach(function (b) { b.addEventListener("click", function () { presionar(b.dataset.dir); }); });
+$("#btnReiniciar").addEventListener("click", function () { reiniciarJuego(); activo = false; });
+
+/* ============================ pantallas ============================ */
+const izq = $("#izq");
+let lec = null; // lección en curso
+
+function pintarStats() {
+  $("#xp").textContent = prog.xp;
+  $("#racha").textContent = prog.racha;
+  $("#btnSonido").textContent = prog.sonido ? "🔊" : "🔇";
+}
+
+function pantallaInicio() {
+  lec = null;
+  instalarDesdeProgreso();
+  const actual = UNIDADES.findIndex(function (_, u) { return !prog.hechas[u]; });
+  let html = '<div class="panel intro"><h1>Aprende C# armando tu videojuego 🎮</h1><p>El juego de la derecha está <b>casi listo</b>, pero le faltan piezas. Cada lección te enseña algo de <b>C#</b> y al final <b>tú escribes en C# la pieza que falta</b>. ¡Mira cómo cobra vida! Al terminar, lo llevas a <b>Visual Studio</b>.</p></div><div class="panel camino">';
+  UNIDADES.forEach(function (un, u) {
+    const hecha = !!prog.hechas[u], abierta = desbloqueada(u);
+    const cls = hecha ? "hecho" : (abierta ? "" : "bloqueado");
+    const desp = [0, 60, 90, 60, 0, -60, -90, -60][u % 8];
+    if (u > 0) html += '<div class="conector" style="transform:translateX(' + (desp / 2) + 'px)"></div>';
+    html += '<div class="paso" style="transform:translateX(' + desp + 'px)"><button class="nodo-camino ' + cls + (u === actual ? " actual" : "") + '" data-u="' + u + '" ' + (abierta ? "" : "disabled") + ' aria-label="' + esc(un.titulo) + '">' + (hecha ? "✓" : un.icono) + '</button><div class="etiqueta-camino">' + (u + 1) + ". " + esc(un.titulo) + "<small>" + (abierta ? "🔧 " + esc(un.pieza) : "🔒 Bloqueada") + "</small></div></div>";
+  });
+  html += '<div class="conector"></div><div class="paso"><button class="nodo-camino ' + (actual === -1 ? "hecho actual" : "bloqueado") + '" id="nodoFinal" ' + (actual === -1 ? "" : "disabled") + '>🏆</button><div class="etiqueta-camino">¡Juego completo!</div></div></div>';
+  html += '<p style="text-align:center;margin-top:14px"><button class="btn-sec" id="btnBorrar">Borrar mi progreso</button></p>';
+  izq.innerHTML = html;
+  izq.querySelectorAll(".nodo-camino[data-u]").forEach(function (b) { b.addEventListener("click", function () { iniciarLeccion(+b.dataset.u); }); });
+  const nf = $("#nodoFinal"); if (nf && actual === -1) nf.addEventListener("click", pantallaFinal);
+  $("#btnBorrar").addEventListener("click", function () {
+    if (confirmarInline(this, "¿Seguro? Toca otra vez para borrar todo")) {
+      prog = { xp: 0, hechas: {}, codigos: {}, racha: 0, ultimoDia: "", sonido: prog.sonido };
+      guardar(); pintarStats(); reiniciarJuego(); pantallaInicio();
+    }
+  });
+  window.scrollTo(0, 0);
+}
+function confirmarInline(btn, txt) {
+  if (btn.dataset.conf === "1") return true;
+  btn.dataset.conf = "1"; btn.textContent = txt;
+  setTimeout(function () { btn.dataset.conf = ""; btn.textContent = "Borrar mi progreso"; }, 4000);
+  return false;
+}
+
+const REPO_URL = "https://github.com/Trejo14/comepuntos";
+function pantallaFinal() {
+  lec = null;
+  izq.innerHTML = '<div class="panel leccion"><div class="centro"><div class="grande">🏆</div><h2>¡Terminaste tu videojuego en C#!</h2><p>Escribiste tú mismo cada pieza: colores, movimiento, paredes, puntos, fantasmas, choques, radar y persecución. Eso es <b>programar</b>.</p></div>' +
+    '<h3>🖥️ Llévalo a Visual Studio</h3><ol class="pasos-vs"><li>Descarga el proyecto de <a href="' + REPO_URL + '" target="_blank" rel="noopener">' + REPO_URL.replace("https://", "") + '</a> (botón verde <b>Code → Download ZIP</b>) y abre la carpeta <b>proyecto-csharp</b>.</li><li>Abre <code class="in">ComePuntos.csproj</code> en Visual Studio.</li><li>Toca <b>Copiar mi código</b> aquí abajo y pégalo en <code class="in">Program.cs</code>, entre <code class="in">PEGA AQUÍ TU CÓDIGO</code> y <code class="in">FIN DE TU CÓDIGO</code>, reemplazando lo que haya.</li><li>Presiona <b>F5</b>: ¡tu juego corre en la consola, con tu código de C#!</li></ol>' +
+    '<h3>🤖 Lo que aprendiste sobre la IA</h3><ul class="reglas">' + REGLAS_IA.map(function (r) { return "<li><b>" + esc(r[0]) + "</b>" + esc(r[1]) + "</li>"; }).join("") + "</ul>" +
+    '<h3>Retos para ir más allá</h3><ul><li>Cambia los colores y la velocidad (lección 1).</li><li>Haz que los puntos valgan distinto (lección 5).</li><li>Pídele a la IA ideas para mejorar tu juego… ¡y explícale a un compañero cómo funcionan!</li></ul>' +
+    '<textarea class="prompt mono oculto" id="codigoFinal" readonly style="min-height:220px;font-size:13px"></textarea><div class="pie"><button class="btn-sec" id="btnDescargar">📋 Copiar mi código</button><button class="btn-prim" id="btnVolver">Volver</button></div></div>';
+  $("#btnVolver").addEventListener("click", pantallaInicio);
+  $("#btnDescargar").addEventListener("click", descargarCodigo);
+}
+function codigoParaVisualStudio() {
+  let txt = "// ===== Mi código de ComePuntos (C#) — " + new Date().toLocaleDateString() + " =====\n";
+  UNIDADES.forEach(function (un, u) {
+    const ej = un.ejercicios.find(function (e) { return e.t === "codigo"; });
+    txt += "\n// ----- Lección " + (u + 1) + ": " + un.titulo + " (" + un.pieza + ")" + (prog.hechas[u] ? "" : " — SIN TERMINAR") + " -----\n" + (prog.codigos[u] || ej.inicial).replace(/\s+$/, "") + "\n";
+  });
+  return txt;
+}
+function descargarCodigo() {
+  const txt = codigoParaVisualStudio();
+  const ta = $("#codigoFinal"), btn = $("#btnDescargar");
+  ta.value = txt; ta.classList.remove("oculto");
+  const listo = function () { btn.textContent = "✓ Copiado: pégalo en Program.cs"; };
+  const manual = function () { ta.focus(); ta.select(); btn.textContent = "Selecciona el texto y cópialo (Ctrl+C)"; };
+  try { navigator.clipboard.writeText(txt).then(listo, manual); } catch (e) { manual(); }
+}
+
+/* ============================ lecciones ============================ */
+function iniciarLeccion(u) {
+  instalarDesdeProgreso();
+  const n = UNIDADES[u].ejercicios.length;
+  lec = { u: u, cola: Array.from({ length: n }, function (_, k) { return k; }), hechos: 0, total: n, corazones: 5, errores: 0, estado: "respondiendo", ejActual: null };
+  activo = false;
+  mostrarEjercicio();
+}
+function salirLeccion() { pantallaInicio(); }
+
+function mostrarEjercicio() {
+  const un = UNIDADES[lec.u];
+  const k = lec.cola[0];
+  const ej = un.ejercicios[k];
+  lec.estado = "respondiendo";
+  izq.innerHTML = '<div class="panel leccion"><div class="lec-top"><button class="cerrar" id="btnCerrar" title="Salir">✕</button><div class="progreso"><div style="width:' + (100 * lec.hechos / lec.total) + '%"></div></div><span class="corazones">❤ ' + lec.corazones + '</span></div><div class="ejercicio" id="ej"></div><div class="pie" id="pie"><div class="msg" id="pieMsg"></div><button class="btn-prim" id="btnPie" disabled>Comprobar</button></div></div>';
+  $("#btnCerrar").addEventListener("click", salirLeccion);
+  const caja = $("#ej");
+  const ctrl = RENDER[ej.t](caja, ej, un);
+  lec.ejActual = ctrl;
+  const btn = $("#btnPie");
+  if (ctrl.textoBoton) btn.textContent = ctrl.textoBoton;
+  ctrl.alCambiar = function () { if (lec.estado === "respondiendo") btn.disabled = !ctrl.listo(); };
+  ctrl.alCambiar();
+  btn.addEventListener("click", function () { accionPie(ej, ctrl); });
+  window.scrollTo({ top: 0 });
+}
+
+async function accionPie(ej, ctrl) {
+  const pie = $("#pie"), msg = $("#pieMsg"), btn = $("#btnPie");
+  if (lec.estado === "revisado") { siguienteEjercicio(lec.ultimoOk); return; }
+  if (lec.estado === "esperando") return;
+  lec.estado = "esperando"; btn.disabled = true;
+  const r = await ctrl.comprobar();
+  if (r.reintentar) { lec.estado = "respondiendo"; btn.disabled = !ctrl.listo(); if (r.msg) { pie.className = "pie mal"; msg.innerHTML = r.msg; } return; }
+  lec.estado = "revisado"; lec.ultimoOk = r.ok;
+  pie.className = "pie " + (r.ok ? "bien" : "mal");
+  const frases = ["¡Excelente!", "¡Muy bien!", "¡Perfecto!", "¡Así se hace!", "¡Genial!"];
+  msg.innerHTML = "<b>" + (r.ok ? frases[Math.floor(Math.random() * frases.length)] : "Casi…") + "</b>" + (r.msg || "");
+  btn.textContent = "Continuar"; btn.disabled = false;
+  sonar(r.ok ? "bien" : "mal");
+  if (!r.ok && r.cuesta !== false) { lec.corazones--; lec.errores++; $(".corazones").textContent = "❤ " + lec.corazones; }
+  btn.focus();
+}
+
+function siguienteEjercicio(ok) {
+  const k = lec.cola.shift();
+  if (ok) lec.hechos++; else lec.cola.push(k);  // si fallas, el ejercicio regresa al final
+  if (lec.corazones <= 0) { sinCorazones(); return; }
+  if (!lec.cola.length) { terminarLeccion(); return; }
+  mostrarEjercicio();
+}
+
+function sinCorazones() {
+  sonar("mal");
+  izq.innerHTML = '<div class="panel leccion"><div class="centro"><div class="grande">💔</div><h2>Te quedaste sin corazones</h2><p>No pasa nada: equivocarse es parte de aprender. Vuelve a leer la teoría con calma e inténtalo otra vez.</p></div><div class="pie"><button class="btn-sec" id="btnSalir">Volver al camino</button><button class="btn-prim" id="btnOtra">Intentar de nuevo</button></div></div>';
+  $("#btnSalir").addEventListener("click", pantallaInicio);
+  $("#btnOtra").addEventListener("click", function () { iniciarLeccion(lec.u); });
+}
+
+function terminarLeccion() {
+  const u = lec.u, un = UNIDADES[u];
+  const errores = lec.errores;
+  lec = null;
+  const yaEstaba = !!prog.hechas[u];
+  const ganado = yaEstaba ? 5 : 20 + (errores === 0 ? 10 : 0);
+  prog.xp += ganado;
+  prog.hechas[u] = true;
+  const d = hoy(), ayer = hoy(new Date(Date.now() - 864e5));
+  if (prog.ultimoDia !== d) { prog.racha = prog.ultimoDia === ayer ? prog.racha + 1 : 1; prog.ultimoDia = d; }
+  guardar(); pintarStats(); instalarDesdeProgreso();
+  sonar("fin");
+  izq.innerHTML = '<div class="panel leccion"><div class="centro"><div class="grande">' + un.icono + '</div><h2>¡Lección completa!</h2><p style="font-size:18px">⚡ +' + ganado + " XP" + (errores === 0 && !yaEstaba ? " · ¡sin errores! 🌟" : "") + '</p><p>Tu juego ya tiene: <b>' + esc(un.pieza) + '</b>. ¡Pruébalo a la derecha! →</p></div><div class="pie"><button class="btn-prim" id="btnSeguir">Continuar</button></div></div>';
+  $("#btnSeguir").addEventListener("click", function () { if (u === UNIDADES.length - 1) pantallaFinal(); else pantallaInicio(); });
+}
+
+/* ------------------------- tipos de ejercicio ------------------------- */
+function codigoHtml(src) { return '<pre class="codigo">' + esc(src) + "</pre>"; }
+function mezclar(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+function formatoIA(t) {
+  const partes = String(t).split(/```[a-z]*\n?/);
+  return partes.map(function (p, k) {
+    if (k % 2 === 1) return "<pre>" + esc(p.replace(/\n$/, "")) + "</pre>";
+    return esc(p).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, '<code class="in">$1</code>').replace(/\n/g, "<br>");
+  }).join("");
+}
+
+const RENDER = {
+  teoria: function (caja, ej) {
+    caja.innerHTML = '<div class="tipo">📖 Aprende</div><h3>' + esc(ej.titulo) + '</h3><div class="teoria">' + ej.html + "</div>";
+    return { textoBoton: "Continuar", listo: function () { return true; }, comprobar: function () { return { ok: true, msg: "" }; } };
+  },
+
+  opcion: function (caja, ej) {
+    let sel = -1;
+    caja.innerHTML = '<div class="tipo">✅ Elige la respuesta</div><h3>' + esc(ej.pregunta) + "</h3>" + (ej.codigo ? codigoHtml(ej.codigo) : "") +
+      '<div class="opciones">' + ej.opciones.map(function (o, k) { return '<button class="opcion" data-k="' + k + '">' + (ej.codigoOpciones ? "<code>" + esc(o) + "</code>" : esc(o)) + "</button>"; }).join("") + "</div>";
+    const ctrl = {
+      listo: function () { return sel >= 0; },
+      comprobar: function () {
+        const ok = sel === ej.correcta;
+        caja.querySelectorAll(".opcion").forEach(function (b, k) { b.disabled = true; if (k === ej.correcta) b.classList.add("bien"); else if (k === sel) b.classList.add("mal"); });
+        return { ok: ok, msg: (ok ? "" : "<span>Respuesta correcta: <b style='display:inline;font-size:inherit'>" + esc(ej.opciones[ej.correcta]) + "</b></span><br>") + esc(ej.explicacion) };
+      }
+    };
+    caja.querySelectorAll(".opcion").forEach(function (b) { b.addEventListener("click", function () { caja.querySelectorAll(".opcion").forEach(function (x) { x.classList.remove("sel"); }); b.classList.add("sel"); sel = +b.dataset.k; ctrl.alCambiar(); }); });
+    return ctrl;
+  },
+
+  hueco: function (caja, ej) { return rellenarHuecos(caja, ej, "🧩 Completa el código", false); },
+  diagrama: function (caja, ej) { return rellenarHuecos(caja, ej, "🗺️ Completa el diagrama", true); },
+
+  ordenar: function (caja, ej) {
+    const fichas = mezclar(ej.lineas.map(function (t, k) { return { t: t, k: k }; }));
+    let resp = [];
+    caja.innerHTML = '<div class="tipo">🔀 Ordena</div><h3>' + esc(ej.pregunta) + '</h3><div class="respuesta-orden" id="resp"></div><div class="banco" id="banco"></div>';
+    const ctrl = {
+      listo: function () { return resp.length === ej.lineas.length; },
+      comprobar: function () {
+        const ok = resp.every(function (f, i) { return f.t.trim() === ej.lineas[i].trim(); });
+        caja.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+        return { ok: ok, msg: (ok ? "" : "<span>El orden correcto es:</span>" + codigoHtml(ej.lineas.join("\n"))) + esc(ej.explicacion) };
+      }
+    };
+    function pintar() {
+      $("#resp", caja).innerHTML = resp.map(function (f, i) { return '<button class="ficha" data-i="' + i + '">' + esc(f.t) + "</button>"; }).join("") || '<span style="color:var(--muted)">Toca las fichas en orden…</span>';
+      $("#banco", caja).innerHTML = fichas.map(function (f, i) { return '<button class="ficha ' + (resp.indexOf(f) >= 0 ? "usada" : "") + '" data-b="' + i + '">' + esc(f.t) + "</button>"; }).join("");
+      $("#resp", caja).querySelectorAll(".ficha").forEach(function (b) { b.addEventListener("click", function () { resp.splice(+b.dataset.i, 1); pintar(); }); });
+      $("#banco", caja).querySelectorAll(".ficha").forEach(function (b) { b.addEventListener("click", function () { const f = fichas[+b.dataset.b]; if (resp.indexOf(f) < 0) { resp.push(f); pintar(); } }); });
+      if (ctrl.alCambiar) ctrl.alCambiar();
+    }
+    pintar();
+    return ctrl;
+  },
+
+  ia_elige: function (caja, ej) {
+    let sel = -1;
+    caja.innerHTML = '<div class="tipo">🤖 Usar bien la IA</div><h3>' + esc(ej.pregunta) + '</h3><div class="opciones">' +
+      ej.opciones.map(function (o, k) { return '<button class="opcion" data-k="' + k + '">' + esc(o.txt) + "</button>"; }).join("") + "</div>";
+    const correcta = ej.opciones.findIndex(function (o) { return o.ok; });
+    const ctrl = {
+      listo: function () { return sel >= 0; },
+      comprobar: function () {
+        const ok = sel === correcta;
+        caja.querySelectorAll(".opcion").forEach(function (b, k) { b.disabled = true; if (k === correcta) b.classList.add("bien"); else if (k === sel) b.classList.add("mal"); });
+        return { ok: ok, msg: esc(ej.opciones[sel].por) + (ok ? "" : "<br><b style='display:inline;font-size:inherit'>La mejor:</b> " + esc(ej.opciones[correcta].por)) + "<br>📌 <i>" + esc(ej.regla) + "</i>" };
+      }
+    };
+    caja.querySelectorAll(".opcion").forEach(function (b) { b.addEventListener("click", function () { caja.querySelectorAll(".opcion").forEach(function (x) { x.classList.remove("sel"); }); b.classList.add("sel"); sel = +b.dataset.k; ctrl.alCambiar(); }); });
+    return ctrl;
+  },
+
+  ia_revisa: function (caja, ej) {
+    let sel = -1;
+    caja.innerHTML = '<div class="tipo">🤖 Revisa lo que dice la IA</div><h3>' + esc(ej.pregunta) + '</h3><div class="lineas-revisar">' +
+      ej.lineas.map(function (l, k) { return '<button data-k="' + k + '"><span class="num">' + (k + 1) + "</span>" + esc(l) + "</button>"; }).join("") + "</div>";
+    const ctrl = {
+      listo: function () { return sel >= 0; },
+      comprobar: function () {
+        const ok = sel === ej.mala;
+        caja.querySelectorAll(".lineas-revisar button").forEach(function (b, k) { b.disabled = true; if (k === ej.mala) b.classList.add("bien"); });
+        return { ok: ok, msg: (ok ? "" : "<span>El error está en la línea " + (ej.mala + 1) + ".</span><br>") + esc(ej.explicacion) + "<br>📌 <i>" + esc(ej.regla) + "</i>" };
+      }
+    };
+    caja.querySelectorAll(".lineas-revisar button").forEach(function (b) { b.addEventListener("click", function () { caja.querySelectorAll(".lineas-revisar button").forEach(function (x) { x.classList.remove("sel"); }); b.classList.add("sel"); sel = +b.dataset.k; ctrl.alCambiar(); }); });
+    return ctrl;
+  },
+
+  ia_escribe: function (caja, ej) {
+    caja.innerHTML = '<div class="tipo">🤖 Escríbele a la IA</div><h3>Practica cómo pedirle ayuda a la IA</h3><div>' + ej.tarea + '</div>' +
+      '<textarea class="prompt" id="prompt" placeholder="Escribe aquí tu mensaje para la IA…"></textarea>' +
+      '<p style="margin:8px 0 0;color:var(--muted);font-size:14px">Un buen mensaje…</p><ul class="checklist" id="check">' + ej.criterios.map(function (c) { return "<li>" + esc(c.txt) + "</li>"; }).join("") + '</ul>' +
+      '<div class="chat" id="chat"></div><p style="color:var(--muted);font-size:13px;margin-top:10px">Esta es una IA <b>simulada</b> para practicar: responde según qué tan bueno es tu mensaje.</p>';
+    const ta = $("#prompt", caja);
+    function cumplidos() { const t = normalizar(ta.value); return ej.criterios.map(function (c) { return new RegExp(c.re).test(t); }); }
+    function pintar() { const c = cumplidos(); caja.querySelectorAll("#check li").forEach(function (li, k) { li.classList.toggle("si", c[k]); }); if (ctrl.alCambiar) ctrl.alCambiar(); }
+    const ctrl = {
+      textoBoton: "Enviar a la IA",
+      listo: function () { return ta.value.trim().length >= 10; },
+      comprobar: function () {
+        const c = cumplidos(), n = c.filter(Boolean).length, todos = n === c.length;
+        const chat = $("#chat", caja);
+        chat.innerHTML = '<div class="burbuja yo">' + esc(ta.value.trim()) + '</div><div class="burbuja ia"><div class="quien">🤖 IA (simulada)</div><span>…</span></div>';
+        const resp = n < Math.ceil(c.length / 2) ? ej.vaga : ej.buena;
+        return new Promise(function (res) {
+          setTimeout(function () {
+            chat.querySelector(".burbuja.ia span").outerHTML = "<div>" + formatoIA(resp) + "</div>";
+            const faltan = ej.criterios.filter(function (_, k) { return !c[k]; }).map(function (x) { return "• " + esc(x.txt); }).join("<br>");
+            if (todos) { ta.disabled = true; res({ ok: true, msg: "Tu mensaje tiene todo lo que necesita una buena pregunta.<br>📌 <i>" + esc(ej.regla) + "</i>" }); }
+            else res({ reintentar: true, msg: "<b>" + (resp === ej.vaga ? esc(ej.notaVaga) : "¡Vas bien! La IA te entendió, pero tu mensaje puede mejorar.") + "</b>Le faltó:<br>" + faltan + "<br>Edita tu mensaje y vuelve a enviarlo." });
+            chat.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }, 700);
+        });
+      }
+    };
+    ta.addEventListener("input", pintar);
+    return ctrl;
+  },
+
+  codigo: function (caja, ej, un) {
+    const u = UNIDADES.indexOf(un);
+    let codigo = prog.codigos["borrador" + u] || prog.codigos[u] || ej.inicial;
+    let pistasVistas = 0, ultimo = null, temporizador = null, version = 0;
+    caja.innerHTML = '<div class="tipo">💻 Escribe la pieza en C#</div><h3>' + esc(ej.titulo) + "</h3><p>" + ej.enunciado + '</p>' +
+      '<div class="editor-caja"><div class="gutter" id="gutter">1</div><textarea class="editor" id="editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>' +
+      '<div class="acciones-codigo"><button class="btn-sec" id="btnPista">💡 Pista</button><button class="btn-sec" id="btnOriginal">↺ Empezar de nuevo</button>' + (MODO_PROFE ? '<button class="btn-sec" id="btnSol">👩‍🏫 Ver solución</button>' : "") + '</div>' +
+      '<div id="pistas"></div><p class="estado-codigo" id="estado" style="margin-top:12px">⏳ Revisando…</p><div id="errorCod"></div><ul class="pruebas" id="pruebas"></ul><div id="consola"></div>';
+    const ed = $("#editor", caja), gutter = $("#gutter", caja);
+    ed.value = codigo;
+    function lineas() { const n = ed.value.split("\n").length; let s = ""; for (let i = 1; i <= n; i++) s += i + "\n"; gutter.textContent = s; ed.rows = Math.max(12, n + 1); }
+    ed.addEventListener("scroll", function () { gutter.scrollTop = ed.scrollTop; });
+    ed.addEventListener("focus", function () { activo = false; });
+    ed.addEventListener("keydown", function (e) {
+      if (e.key === "Tab") { e.preventDefault(); insertar("  "); }
+      else if (e.key === "Enter") {
+        e.preventDefault();
+        const ini = ed.value.lastIndexOf("\n", ed.selectionStart - 1) + 1;
+        const lin = ed.value.slice(ini, ed.selectionStart);
+        let sangria = (lin.match(/^\s*/) || [""])[0];
+        if (/[{[(]\s*$/.test(lin)) sangria += "  ";
+        insertar("\n" + sangria);
+      }
+    });
+    function insertar(t) {
+      const a = ed.selectionStart, b = ed.selectionEnd;
+      ed.value = ed.value.slice(0, a) + t + ed.value.slice(b);
+      ed.selectionStart = ed.selectionEnd = a + t.length;
+      cambio();
+    }
+    function cambio() {
+      lineas();
+      prog.codigos["borrador" + u] = ed.value; guardar();
+      $("#estado", caja).textContent = "⏳ Revisando…";
+      clearTimeout(temporizador);
+      temporizador = setTimeout(revisar, 450);
+    }
+    async function revisar() {
+      const mio = ++version;
+      const src = ed.value;
+      const r = await revisarCodigo(u, src, ej);
+      if (mio !== version) return;
+      ultimo = r;
+      const est = $("#estado", caja), err = $("#errorCod", caja), pr = $("#pruebas", caja), con = $("#consola", caja);
+      err.innerHTML = r.error ? '<div class="error-codigo">❌ ' + esc(r.error) + (r.errorOriginal ? '<br><small style="opacity:.75">Mensaje original: ' + esc(r.errorOriginal) + "</small>" : "") + "</div>" : "";
+      pr.innerHTML = (r.pruebas || []).map(function (p) { return '<li class="' + (p.ok ? "si" : "no") + '">' + (p.ok ? "✅ " : "❌ ") + esc(p.msg) + "</li>"; }).join("");
+      con.innerHTML = r.logs && r.logs.length ? '<p style="margin:10px 0 4px;font-weight:700;font-size:14px">🖥️ console.log</p><div class="consola">' + esc(r.logs.join("\n")) + "</div>" : "";
+      if (r.error) est.textContent = "Hay un problema en tu código:";
+      else if (r.ok) est.innerHTML = '<span style="color:var(--ok)">✅ ¡Todas las pruebas pasan! Mira tu juego → y toca Comprobar.</span>';
+      else { const n = r.pruebas.filter(function (p) { return p.ok; }).length; est.textContent = "Pruebas: " + n + " de " + r.pruebas.length + " ✓ — el juego ya usa tu código, ¡míralo!"; }
+      if (r.instalable) instalarVivo(u, src);
+      if (ctrl.alCambiar) ctrl.alCambiar();
+    }
+    ed.addEventListener("input", cambio);
+    $("#btnPista", caja).addEventListener("click", function () {
+      if (pistasVistas < ej.pistas.length) { pistasVistas++; $("#pistas", caja).innerHTML = ej.pistas.slice(0, pistasVistas).map(function (p, k) { return '<div class="pista">💡 <b>Pista ' + (k + 1) + ":</b> " + esc(p) + "</div>"; }).join(""); }
+      if (pistasVistas >= ej.pistas.length) this.disabled = true;
+    });
+    $("#btnOriginal", caja).addEventListener("click", function () { ed.value = ej.inicial; cambio(); });
+    if (MODO_PROFE) $("#btnSol", caja).addEventListener("click", function () { ed.value = ej.solucion; cambio(); });
+    const ctrl = {
+      listo: function () { return !!(ultimo && ultimo.ok); },
+      comprobar: function () {
+        if (!(ultimo && ultimo.ok)) return { reintentar: true, msg: "<b>Todavía hay pruebas que fallan.</b>Revisa las ❌ de arriba." };
+        prog.codigos[u] = ed.value; delete prog.codigos["borrador" + u]; guardar();
+        ed.disabled = true;
+        return { ok: true, msg: "Tu pieza «" + esc(un.pieza) + "» ya está en el juego." };
+      }
+    };
+    lineas(); revisar();
+    return ctrl;
+  }
+};
+
+// Huecos con banco de fichas (para "hueco" y "diagrama").
+function rellenarHuecos(caja, ej, tipoTxt, esDiagrama) {
+  const huecos = [];  // {correcta, valor}
+  const distractores = [];
+  function procesar(texto) {
+    return esc(texto).replace(/\[\[(.+?)\]\]/g, function (_, dentro) {
+      const ops = dentro.split("|").map(function (s) { return s.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&"); });
+      huecos.push({ correcta: ops[0], valor: null });
+      ops.slice(1).forEach(function (o) { distractores.push(o); });
+      return '<span class="hueco vacio" data-h="' + (huecos.length - 1) + '">____</span>';
+    });
+  }
+  let cuerpo;
+  if (esDiagrama) {
+    cuerpo = '<div class="diagrama">' + ej.nodos.map(function (n, k) {
+      const ml = (n.nivel || 0) * 26;
+      let h = '<div class="dnodo" style="margin-left:' + ml + 'px"><span class="forma f-' + n.f + '">' + (n.f === "ciclo" ? "↻ " : "") + procesar(n.txt) + "</span>";
+      if (n.si) h += '<span class="flecha-si">Sí →</span><span class="forma f-proc">' + procesar(n.si) + "</span>";
+      h += "</div>";
+      if (k < ej.nodos.length - 1) h += '<div class="flecha-abajo" style="margin-left:' + ml + 'px">' + (n.f === "dec" ? "↓ No" : "↓") + "</div>";
+      return h;
+    }).join("") + "</div>";
+  } else {
+    cuerpo = '<pre class="codigo">' + procesar(ej.codigo) + "</pre>";
+  }
+  const correctas = huecos.map(function (h) { return h.correcta; });
+  const banco = mezclar(correctas.concat(distractores.filter(function (d, i, a) { return a.indexOf(d) === i && correctas.indexOf(d) < 0; })))
+    .map(function (t) { return { t: t, usada: false }; });
+  caja.innerHTML = '<div class="tipo">' + tipoTxt + "</div><h3>" + esc(ej.pregunta) + "</h3>" + cuerpo + '<div class="banco" id="banco"></div>';
+  const ctrl = {
+    listo: function () { return huecos.every(function (h) { return h.valor !== null; }); },
+    comprobar: function () {
+      let ok = true;
+      caja.querySelectorAll(".hueco").forEach(function (el) { const h = huecos[+el.dataset.h]; const b = h.valor.t === h.correcta; ok = ok && b; el.classList.add(b ? "bien" : "mal"); if (!b) el.textContent = h.valor.t + " → " + h.correcta; });
+      caja.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+      bloqueado = true;
+      return { ok: ok, msg: esc(ej.explicacion) };
+    }
+  };
+  let bloqueado = false;
+  function pintar() {
+    caja.querySelectorAll(".hueco").forEach(function (el) {
+      const h = huecos[+el.dataset.h];
+      el.textContent = h.valor ? h.valor.t : "____";
+      el.classList.toggle("vacio", !h.valor);
+    });
+    $("#banco", caja).innerHTML = banco.map(function (f, i) { return '<button class="ficha ' + (f.usada ? "usada" : "") + '" data-i="' + i + '">' + esc(f.t) + "</button>"; }).join("");
+    $("#banco", caja).querySelectorAll(".ficha").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (bloqueado) return;
+        const f = banco[+b.dataset.i];
+        const libre = huecos.find(function (h) { return h.valor === null; });
+        if (!libre || f.usada) return;
+        libre.valor = f; f.usada = true; pintar();
+      });
+    });
+    if (ctrl.alCambiar) ctrl.alCambiar();
+  }
+  caja.addEventListener("click", function (e) {
+    const el = e.target.closest(".hueco");
+    if (!el || bloqueado) return;
+    const h = huecos[+el.dataset.h];
+    if (h.valor) { h.valor.usada = false; h.valor = null; pintar(); }
+  });
+  pintar();
+  return ctrl;
+}
+
+/* ============================ arranque ============================ */
+$("#irInicio").addEventListener("click", pantallaInicio);
+$("#btnSonido").addEventListener("click", function () { prog.sonido = !prog.sonido; guardar(); pintarStats(); });
+$("#listaReglas").innerHTML = REGLAS_IA.map(function (r) { return "<li><b>" + esc(r[0]) + "</b>" + esc(r[1]) + "</li>"; }).join("");
+$("#btnReglas").addEventListener("click", function () { const d = $("#dlgReglas"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); });
+$("#cerrarReglas").addEventListener("click", function () { $("#dlgReglas").close(); });
+pintarStats();
+instalarDesdeProgreso();
+reiniciarJuego();
+pantallaInicio();
+bucle();
+animar();
+</script>

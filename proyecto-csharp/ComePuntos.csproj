@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Proyecto de consola de ComePuntos. No necesitas modificarlo.
+    Funciona con .NET 8 o más nuevo (RollForward usa la versión que tengas).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>ComePuntos</RootNamespace>
+  </PropertyGroup>
+
+</Project>
